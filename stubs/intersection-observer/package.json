@@ -1,0 +1,17 @@
+{
+  "name": "intersection-observer",
+  "version": "0.12.2",
+  "description": "Local no-op stand-in for the deprecated intersection-observer polyfill. IntersectionObserver has been native in Chromium since 2019, and ReactLab only ever runs in Chromium (Vite dev server or the Electron shell), so the polyfill is dead weight in the bundle. Wired up through the `overrides` block in the root package.json; @codesandbox/sandpack-react -> @react-hook/intersection-observer imports it unconditionally.",
+  "license": "MIT",
+  "main": "index.js",
+  "module": "index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  }
+}

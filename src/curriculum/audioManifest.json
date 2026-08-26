@@ -1,0 +1,338 @@
+{
+  "use-ref": {
+    "expected": 12,
+    "present": 0
+  },
+  "use-reducer": {
+    "expected": 12,
+    "present": 0
+  },
+  "use-memo": {
+    "expected": 13,
+    "present": 0
+  },
+  "use-id": {
+    "expected": 11,
+    "present": 0
+  },
+  "suspense": {
+    "expected": 17,
+    "present": 0
+  },
+  "transitions": {
+    "expected": 13,
+    "present": 0
+  },
+  "server-components": {
+    "expected": 14,
+    "present": 0
+  },
+  "actions-api": {
+    "expected": 18,
+    "present": 0
+  },
+  "use-optimistic": {
+    "expected": 13,
+    "present": 0
+  },
+  "capstone-dashboard": {
+    "expected": 5,
+    "present": 0
+  },
+  "capstone-production-app": {
+    "expected": 6,
+    "present": 0
+  },
+  "capstone-modern-react": {
+    "expected": 5,
+    "present": 0
+  },
+  "use-local-storage": {
+    "expected": 14,
+    "present": 0
+  },
+  "use-debounce": {
+    "expected": 12,
+    "present": 0
+  },
+  "use-sync-external-store": {
+    "expected": 12,
+    "present": 0
+  },
+  "debug-render-loop": {
+    "expected": 8,
+    "present": 0
+  },
+  "debug-effect-loop": {
+    "expected": 7,
+    "present": 0
+  },
+  "debug-identity": {
+    "expected": 10,
+    "present": 0
+  },
+  "debug-strict-mode": {
+    "expected": 9,
+    "present": 0
+  },
+  "accessibility-and-testing": {
+    "expected": 11,
+    "present": 0
+  },
+  "controlled-inputs": {
+    "expected": 19,
+    "present": 0
+  },
+  "form-controls": {
+    "expected": 10,
+    "present": 0
+  },
+  "form-validation": {
+    "expected": 13,
+    "present": 0
+  },
+  "per-field-validation": {
+    "expected": 11,
+    "present": 0
+  },
+  "jsx-intro": {
+    "expected": 17,
+    "present": 0
+  },
+  "components": {
+    "expected": 11,
+    "present": 0
+  },
+  "props": {
+    "expected": 13,
+    "present": 0
+  },
+  "state": {
+    "expected": 14,
+    "present": 0
+  },
+  "events": {
+    "expected": 13,
+    "present": 0
+  },
+  "conditional": {
+    "expected": 10,
+    "present": 0
+  },
+  "lists-and-keys": {
+    "expected": 11,
+    "present": 0
+  },
+  "composition": {
+    "expected": 13,
+    "present": 0
+  },
+  "render-props": {
+    "expected": 12,
+    "present": 0
+  },
+  "error-boundaries": {
+    "expected": 12,
+    "present": 0
+  },
+  "testing-error-boundaries": {
+    "expected": 10,
+    "present": 0
+  },
+  "portals": {
+    "expected": 14,
+    "present": 0
+  },
+  "compound-components": {
+    "expected": 12,
+    "present": 0
+  },
+  "forward-ref": {
+    "expected": 13,
+    "present": 0
+  },
+  "js-variables": {
+    "expected": 12,
+    "present": 0
+  },
+  "js-arrow-functions": {
+    "expected": 12,
+    "present": 0
+  },
+  "js-template-literals": {
+    "expected": 12,
+    "present": 0
+  },
+  "js-destructuring": {
+    "expected": 12,
+    "present": 0
+  },
+  "js-spread-rest": {
+    "expected": 11,
+    "present": 0
+  },
+  "js-array-methods": {
+    "expected": 14,
+    "present": 0
+  },
+  "js-ternary": {
+    "expected": 13,
+    "present": 0
+  },
+  "js-promises": {
+    "expected": 13,
+    "present": 0
+  },
+  "rendering-model": {
+    "expected": 8,
+    "present": 0
+  },
+  "state-or-derived": {
+    "expected": 9,
+    "present": 0
+  },
+  "state-ownership": {
+    "expected": 11,
+    "present": 0
+  },
+  "identity-and-keys": {
+    "expected": 9,
+    "present": 0
+  },
+  "pure-rendering": {
+    "expected": 9,
+    "present": 0
+  },
+  "event-vs-effect": {
+    "expected": 10,
+    "present": 0
+  },
+  "effect-events": {
+    "expected": 11,
+    "present": 0
+  },
+  "activity": {
+    "expected": 11,
+    "present": 0
+  },
+  "react-compiler": {
+    "expected": 10,
+    "present": 0
+  },
+  "modern-react-architecture": {
+    "expected": 11,
+    "present": 0
+  },
+  "reconciliation": {
+    "expected": 14,
+    "present": 0
+  },
+  "reconciliation-rules": {
+    "expected": 12,
+    "present": 0
+  },
+  "react-memo": {
+    "expected": 18,
+    "present": 0
+  },
+  "code-splitting": {
+    "expected": 12,
+    "present": 0
+  },
+  "diagnostic-object-identity": {
+    "expected": 12,
+    "present": 0
+  },
+  "react-router": {
+    "expected": 15,
+    "present": 0
+  },
+  "nested-routes": {
+    "expected": 12,
+    "present": 0
+  },
+  "use-navigate": {
+    "expected": 12,
+    "present": 0
+  },
+  "router-loaders": {
+    "expected": 14,
+    "present": 0
+  },
+  "use-context": {
+    "expected": 13,
+    "present": 0
+  },
+  "use-effect": {
+    "expected": 16,
+    "present": 0
+  },
+  "use-effect-deps": {
+    "expected": 13,
+    "present": 0
+  },
+  "use-layout-effect": {
+    "expected": 10,
+    "present": 0
+  },
+  "data-fetching": {
+    "expected": 14,
+    "present": 0
+  },
+  "diagnostic-stale-closure": {
+    "expected": 10,
+    "present": 0
+  },
+  "diagnostic-missing-cleanup": {
+    "expected": 12,
+    "present": 0
+  },
+  "zustand": {
+    "expected": 15,
+    "present": 0
+  },
+  "react-query": {
+    "expected": 18,
+    "present": 0
+  },
+  "rtl-basics": {
+    "expected": 16,
+    "present": 0
+  },
+  "testing-async": {
+    "expected": 16,
+    "present": 0
+  },
+  "testing-custom-hooks": {
+    "expected": 8,
+    "present": 0
+  },
+  "mocking-modules": {
+    "expected": 6,
+    "present": 0
+  },
+  "msw-api-mocking": {
+    "expected": 7,
+    "present": 0
+  },
+  "ts-props-hooks": {
+    "expected": 14,
+    "present": 0
+  },
+  "ts-context-reducers": {
+    "expected": 14,
+    "present": 0
+  },
+  "typescript-patterns": {
+    "expected": 13,
+    "present": 0
+  },
+  "polymorphic-components": {
+    "expected": 11,
+    "present": 0
+  },
+  "ts-diagnostics": {
+    "expected": 10,
+    "present": 0
+  }
+}

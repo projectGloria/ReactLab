@@ -1,0 +1,1100 @@
+/* ==========================================================================
+   Shared component classes
+   Extracted from inline styles so common patterns (buttons, cards, badges,
+   layout scaffolding) live in one place instead of being redefined per file.
+   Uses the design tokens defined in src/index.css (:root variables).
+   ========================================================================== */
+
+/* ---------- Sidebar ----------
+   Sole owner of the sidebar. index.css previously defined all 14 of these
+   selectors as well; at equal specificity the two merged per-property, so
+   the rendered result (compounded padding, doubled module gaps, misaligned
+   nav links) was not what either file described. The index.css copy is gone
+   and the rules that only existed there are folded in below. */
+
+.sidebar {
+  width: 300px;
+  background-color: var(--bg-sidebar);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  outline: none;
+}
+
+.sidebar:focus,
+.sidebar:focus-visible,
+.sidebar-modules:focus,
+.sidebar-modules:focus-visible,
+.lesson-content-scroll:focus,
+.lesson-content-scroll:focus-visible {
+  outline: none !important;
+}
+
+/* Horizontal margin is 20px to match the .sidebar-modules gutter below it.
+   Was 12px, which left these two links 8px out of alignment with the entire
+   module tree. */
+.sidebar-review-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 20px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+/* Ported from index.css, which was the only source of a hover state here. */
+.sidebar-review-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: rgba(217, 119, 87, 0.35);
+}
+
+.sidebar-review-link.is-active {
+  color: var(--text-primary);
+  background: var(--accent-glow);
+  border-color: var(--accent-primary);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-hamburger-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-header:hover .sidebar-hamburger-btn {
+  opacity: 1;
+}
+
+.sidebar-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+  box-shadow: var(--shadow-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-progress-row {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-progress-track {
+  flex: 1;
+  height: 4px;
+  background-color: var(--bg-hover);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sidebar-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--success);
+  transition: width 0.3s ease;
+}
+
+.sidebar-modules {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.sidebar-module {
+  margin-bottom: 24px;
+}
+
+.sidebar-module-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  /* 9px left = the 3px .sidebar-lesson-link spends on its always-present
+     transparent active bar, plus its 6px of left padding. Keeps module
+     headings and lesson titles on one vertical line (both land at 29px from
+     the sidebar edge) while leaving the accent bar clear of the text. */
+  padding: 4px 0 4px 9px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sidebar-module-prefix {
+  color: var(--accent-primary, #d97757);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-module-name {
+  color: var(--text-secondary, #d6d3d1);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  line-height: 1.35;
+}
+
+/* Ported from index.css: components.css only ever styled the child label on
+   hover, so the row itself lost its hover surface. */
+.sidebar-module-link:hover {
+  background: var(--bg-hover);
+}
+
+.sidebar-module-link:hover .sidebar-module-name {
+  color: var(--text-primary, #fff);
+}
+
+.sidebar-module-link.is-active .sidebar-module-name {
+  color: #fff;
+}
+
+.sidebar-module-link.is-locked .sidebar-module-name {
+  color: #78716c;
+}
+
+.sidebar-lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-lesson-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  min-height: 32px;
+  /* 6px left keeps the title clear of the accent active bar. The matching
+     offset lives on .sidebar-module-link so both still share one vertical
+     line -- see the note there. */
+  padding: 0 6px;
+  margin: 0;
+  border-radius: var(--radius-md, 8px);
+  text-decoration: none;
+  color: var(--text-secondary);
+  background-color: transparent;
+  /* Always present so the active state doesn't shift text by 3px. The
+     accent marker and hover/active surfaces below came only from index.css
+     and would have disappeared with it. */
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 0.88rem;
+  position: relative;
+}
+
+.sidebar-lesson-link:hover {
+  color: var(--text-primary, #ffffff);
+  background-color: var(--bg-hover);
+}
+
+.sidebar-lesson-link.is-active {
+  color: #ffffff;
+  font-weight: 600;
+  background-color: var(--accent-glow);
+  border-left-color: var(--accent-primary);
+}
+
+.sidebar-lesson-link.is-active .sidebar-lesson-title {
+  color: #ffffff;
+}
+
+.sidebar-lesson-link.is-locked {
+  color: #78716c;
+  opacity: 0.75;
+}
+
+/* Completion / lock marker. Taken out of the flex flow and placed in the
+   20px .sidebar-modules gutter, so a lesson with a checkmark and one without
+   start their titles at the same x. Previously the icon sat in the flow and
+   pushed titled text 23px right, misaligning lessons against each other as
+   well as against their module heading. Also returns that 23px to the title,
+   so fewer names truncate. */
+.sidebar-lesson-status {
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-shrink: 0;
+}
+
+.sidebar-lesson-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-coverage-badge {
+  display: inline-flex;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.audio-coverage-badge.is-missing {
+  color: var(--error);
+}
+
+.audio-coverage-badge.is-partial {
+  color: var(--warning);
+}
+
+/* ---------- Learning Check card ---------- */
+
+.learning-check {
+  margin-top: 36px;
+  padding: 26px 28px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-lg, 14px);
+  background: radial-gradient(circle at top left, rgba(217, 119, 87, 0.08), transparent 70%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.25));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.learning-check-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.learning-check-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-primary, #d97757);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+.learning-check-title {
+  margin: 6px 0 6px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  letter-spacing: -0.01em;
+}
+
+.learning-check-desc {
+  margin: 0;
+  color: var(--text-secondary, #a8a29e);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.learning-check-progress {
+  color: var(--text-muted, #71717a);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  white-space: nowrap;
+}
+
+.learning-check-body {
+  margin-top: 22px;
+}
+
+.learning-check-stage {
+  display: inline-block;
+  color: var(--accent-primary, #d97757);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(217, 119, 87, 0.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(217, 119, 87, 0.25);
+  margin-bottom: 12px;
+}
+
+.learning-check-prompt {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.learning-check-code-banner {
+  background: #111110;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-left: 3px solid var(--accent-primary, #d97757);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.learning-check-inline-code {
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-size: 0.88em;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f5f4ee;
+}
+
+.learning-check-code {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #111110;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.learning-check-options {
+  display: grid;
+  gap: 10px;
+}
+
+.learning-check-option {
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  transition: all 0.15s ease;
+}
+
+.learning-check-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.learning-check-option.is-selected {
+  border-color: var(--accent-primary, #d97757);
+  background: rgba(217, 119, 87, 0.14);
+  box-shadow: 0 0 0 1px var(--accent-primary, #d97757);
+}
+
+.learning-check-option:disabled {
+  cursor: default;
+}
+
+.learning-check-option-letter {
+  font-weight: 700;
+  color: var(--accent-primary, #d97757);
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.learning-check-option-content {
+  flex: 1;
+}
+
+.learning-check-textarea {
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  background: #121211;
+  color: var(--text-primary, #fff);
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.learning-check-textarea:focus {
+  border-color: var(--accent-primary, #d97757);
+}
+
+/* No margin-top: this button's only call site sits in a flex column whose
+   12px gap already spaces it, and the two compounded to 26px. */
+.learning-check-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted, #71717a);
+  cursor: not-allowed;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: all 0.15s ease;
+}
+
+.learning-check-submit.is-enabled {
+  background: var(--accent-primary, #d97757);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(217, 119, 87, 0.35);
+}
+
+.learning-check-submit.is-enabled:hover {
+  background: #c15f3c;
+  transform: translateY(-1px);
+}
+
+.learning-check-feedback {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(217, 160, 87, 0.35);
+  background: rgba(217, 160, 87, 0.10);
+}
+
+.learning-check-feedback.is-correct {
+  border-color: rgba(120, 140, 93, 0.35);
+  background: rgba(120, 140, 93, 0.10);
+}
+
+.learning-check-feedback-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--warning, #d9a057);
+}
+
+.learning-check-feedback.is-correct .learning-check-feedback-head {
+  color: var(--success, #788c5d);
+}
+
+.learning-check-feedback-text {
+  margin: 10px 0 0;
+  color: var(--text-secondary, #d6d3d1);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.learning-check-feedback-model {
+  margin: 10px 0 0;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.learning-check-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.learning-check-actions .ui-btn-primary,
+.learning-check-actions .ui-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---------- Buttons ---------- */
+
+.ui-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.ui-btn-success {
+  background-color: var(--success-solid);
+  color: white;
+}
+
+.ui-btn-muted {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.ui-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ui-icon-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ---------- Lesson header ---------- */
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.lesson-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lesson-header-title {
+  margin: 0;
+  font-size: 1.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.lesson-view-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-app);
+  overflow: hidden;
+}
+
+/* Hover-only action buttons for reading popout & zen mode */
+.lesson-prose-header-group .lesson-hover-action-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.lesson-prose-header-group:hover .lesson-hover-action-btn,
+.lesson-hover-action-btn.is-active {
+  opacity: 1;
+}
+
+.lesson-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: none;
+  background-color: var(--bg-panel);
+}
+
+.lesson-view-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lesson-view-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lesson-view-zen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lesson-view-zen-btn:hover,
+.lesson-view-zen-btn.is-active {
+  background: rgba(217, 119, 87, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.lesson-view-mentor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(217, 119, 87, 0.45);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(217, 119, 87, 0.12);
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.lesson-view-mentor-btn:hover {
+  background: rgba(217, 119, 87, 0.22);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.zen-floating-mentor-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--accent-primary);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(217, 119, 87, 0.4);
+}
+
+.lesson-view-editor-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lesson-view-editor-toggle-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.lesson-view-editor-toggle-btn.is-active {
+  background: var(--accent-glow);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.lesson-view-sidebar-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.lesson-view-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+/* Top Left Dynamic Window Controls Capsule */
+.app-top-left-capsule {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  pointer-events: none;
+}
+
+.app-top-left-trigger {
+  padding-top: 0;
+  padding-bottom: 12px;
+  padding-left: 0;
+  padding-right: 16px;
+  pointer-events: auto;
+}
+
+.app-top-left-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(22, 21, 19, 0.95);
+  border: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: translateY(-80%);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+}
+
+/* On-Hover Mode */
+.app-top-left-capsule.is-hover .app-top-left-trigger:hover .app-top-left-pill {
+  transform: translateY(0);
+  opacity: 1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* Always Visible Mode */
+.app-top-left-capsule.is-always .app-top-left-pill {
+  transform: translateY(0);
+  opacity: 0.9;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-top-left-capsule.is-always .app-top-left-pill:hover {
+  opacity: 1;
+}
+
+.lesson-view-complete-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--success-solid);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lesson-view-complete-btn.is-completed {
+  background-color: var(--bg-hover);
+}
+
+/* Sandpack Tabs Header with right padding for embedded toolbar actions */
+.sp-tabs,
+.sp-tabs-scrollable {
+  padding-right: 210px !important;
+  background-color: #181816 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+
+.sp-tabs > div,
+.sp-tabs-scrollable > div {
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  border: none !important;
+}
+
+/* Base Sandpack Tab Button - appended seamlessly next to each other */
+.sp-tab-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 8px 14px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  color: var(--text-secondary, #a8a29e) !important;
+  transition: all 0.15s ease !important;
+}
+
+.sp-tab-button:focus,
+.sp-tab-button:focus-visible,
+.sp-tab-button:focus-within,
+.sp-tab-button:active {
+  outline: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+.sp-tab-button:hover:not([data-active="true"]) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: var(--text-primary, #fff) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.sp-tab-button[data-active="true"] {
+  background-color: rgba(217, 119, 87, 0.08) !important;
+  color: var(--accent-primary, #d97757) !important;
+  font-weight: 600 !important;
+  border: none !important;
+  border-bottom: 2px solid var(--accent-primary, #d97757) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* React Component Tab Icons (App.jsx, App.tsx, Component.jsx, etc.) */
+.sp-tab-button[data-active="true"][title*=".jsx"],
+.sp-tab-button[data-active="true"][title*=".tsx"],
+.sp-tab-button[data-active="true"][title*=".js"],
+.sp-tab-button[data-active="true"][title*=".ts"],
+.sp-tab-button[title*=".jsx"],
+.sp-tab-button[title*=".tsx"],
+.sp-tab-button[title*=".js"],
+.sp-tab-button[title*=".ts"],
+.sp-tab-button[data-active="true"]:not([title*=".css"]),
+.sp-tab-button:not([title*=".css"]) {
+  position: relative;
+}
+
+.sp-tab-button[title*=".jsx"]::before,
+.sp-tab-button[title*=".tsx"]::before,
+.sp-tab-button[title*=".js"]::before,
+.sp-tab-button[title*=".ts"]::before,
+.sp-tab-button:not([title*=".css"])::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11.5 -10.23174 23 20.46348'%3E%3Ccircle cx='0' cy='0' r='2.05' fill='%2361dafb'/%3E%3Cg stroke='%2361dafb' stroke-width='1' fill='none'%3E%3Cellipse rx='11' ry='4.2'/%3E%3Cellipse rx='11' ry='4.2' transform='rotate(60)'/%3E%3Cellipse rx='11' ry='4.2' transform='rotate(120)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* CSS Stylesheet Tab Icons (styles.css, *.css) */
+.sp-tab-button[title*=".css"]::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23264de4' d='M6 3l2.4 24.2 11.6 3.8 11.6-3.8L34 3H6zm19.8 8.4h-13l.3 3.4h12.4l-.8 8.8-6.7 2.1-6.7-2.1-.4-4.8h3.3l.2 2.3 3.6 1.1 3.6-1.1.4-4.3h-11l-.8-9h16l-.4 3.6z' transform='scale(0.8) translate(4, 3)'/%3E%3Cpath fill='%232965f1' d='M20 5.4v21.2l9.3-3.1L31.7 5.4H20zm-.2 5.8h11.2l-.7 7.7-6.5 2.1-.4-2.5 3.6-1.1.4-4h-7.6v-2.2z' transform='scale(0.8) translate(4, 3)'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   Sandpack Code Editor Syntax Enhancements (CSS & JSX readability)
+   ========================================================================== */
+.sp-cm .cm-editor {
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace) !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+}
+
+/* CSS Selectors (e.g. body, .container, #app, :hover) */
+.sp-cm .cm-tag,
+.sp-cm [class*="tok-tag"],
+.sp-cm [class*="tok-typeName"] {
+  color: #f87171 !important; /* Soft coral / red */
+  font-weight: 600;
+}
+
+/* CSS Properties (e.g. background-color, color, padding, display, font-size) */
+.sp-cm .cm-property,
+.sp-cm [class*="tok-propertyName"],
+.sp-cm [class*="tok-definition"] {
+  color: #93c5fd !important; /* Soft sky blue */
+}
+
+/* CSS Values, Strings & Colors */
+.sp-cm .cm-string,
+.sp-cm [class*="tok-string"] {
+  color: #86efac !important; /* Emerald / green */
+}
+
+/* CSS Numbers and Units (e.g. 16px, 1.5, 100%, 0.2s) */
+.sp-cm .cm-number,
+.sp-cm [class*="tok-number"],
+.sp-cm [class*="tok-unit"] {
+  color: #fcd34d !important; /* Amber yellow */
+}
+
+/* CSS Keywords & Built-ins (e.g. solid, inherit, flex, absolute, var) */
+.sp-cm .cm-keyword,
+.sp-cm [class*="tok-keyword"],
+.sp-cm [class*="tok-atom"],
+.sp-cm [class*="tok-builtin"] {
+  color: #d97757 !important; /* ReactLab orange */
+  font-weight: 500;
+}
+
+/* CSS Function calls (e.g. rgb(), rgba(), calc(), var()) */
+.sp-cm [class*="tok-variableName.tok-function"],
+.sp-cm [class*="tok-callee"] {
+  color: #60a5fa !important; /* Bright blue */
+}
+
+/* CSS Punctuation, Colons & Braces (e.g. :, ;, {, }) */
+.sp-cm .cm-punctuation,
+.sp-cm [class*="tok-punctuation"] {
+  color: #a8a29e !important;
+}
+
+/* Comments */
+.sp-cm .cm-comment,
+.sp-cm [class*="tok-comment"] {
+  color: #71717a !important;
+  font-style: italic;
+}
+
+/* ── Code block copy button ──────────────────────────────────────────────────
+   Revealed on hover of the surrounding block, and on keyboard focus so the
+   control is reachable without a pointer. The parent needs position: relative. */
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-subtle);
+  background: rgba(20, 20, 19, 0.9);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.code-copy-host:hover > .code-copy-btn,
+.code-copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(217, 119, 87, 0.45);
+}
+
+/* ── Glossary term trigger ───────────────────────────────────────────────────
+   Words in the lecture text that have a hover explainer. Previously a 1.5px
+   dashed orange underline, which read as a broken link and fought with the
+   surrounding prose at every occurrence.
+
+   Now: the word keeps its own colour and weight, and carries a soft accent
+   underline that only firms up on hover. The dotted question-mark cursor still
+   signals that there is something to read. */
+.glossary-term-highlight {
+  color: inherit;
+  cursor: help;
+  text-decoration: none;
+  border-radius: 3px;
+  padding: 0 1px;
+  /* A 1px underline offset clear of the descenders, drawn in the accent at low
+     opacity so a paragraph with six terms in it still reads as a paragraph. */
+  box-shadow: inset 0 -1px 0 0 rgba(217, 119, 87, 0.4);
+  transition: box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.glossary-term-highlight:hover,
+.glossary-term-highlight.is-open,
+.glossary-term-highlight:focus-visible {
+  color: var(--text-primary);
+  background-color: rgba(217, 119, 87, 0.12);
+  box-shadow: inset 0 -2px 0 0 var(--accent-primary, #d97757);
+  outline: none;
+}
+
+/* Inside a heading the underline would collide with the type; a faint tint is
+   enough to mark the word there. */
+.markdown-body h1 .glossary-term-highlight,
+.markdown-body h2 .glossary-term-highlight,
+.markdown-body h3 .glossary-term-highlight,
+.markdown-body h4 .glossary-term-highlight {
+  box-shadow: none;
+  background-color: rgba(217, 119, 87, 0.1);
+}
