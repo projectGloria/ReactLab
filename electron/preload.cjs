@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   ollama: {
     getStatus: () => ipcRenderer.invoke('ollama:get-status'),
+    listModels: () => ipcRenderer.invoke('ollama:list-models'),
+    setModel: (payload) => ipcRenderer.invoke('ollama:set-model', payload),
     pickFolder: () => ipcRenderer.invoke('ollama:pick-folder'),
     setPaths: (payload) => ipcRenderer.invoke('ollama:set-paths', payload),
     resetPaths: () => ipcRenderer.invoke('ollama:reset-paths'),

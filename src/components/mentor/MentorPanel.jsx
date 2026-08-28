@@ -1,11 +1,27 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Bot, RefreshCw, Send, Sparkles, X, Settings, ExternalLink, Check, Copy, History, MessageSquare, Trash2 } from 'lucide-react';
+import { RefreshCw, Send, X, Settings, ExternalLink, Check, Copy, History, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import useUIStore from '../../store/useUIStore';
 import curriculum from '../../curriculum/index';
 import highlightCode from '../../lib/highlightCode.jsx';
+import TutorAvatar from '../lesson/TutorAvatar.jsx';
+import { getCloudModel, PROVIDER_LABELS } from '../../lib/aiProviders.js';
+import { getEffectiveSystemPrompt } from '../../lib/mentorPersonas.js';
+import { buildMentorContext } from '../../lib/mentorContext.js';
+
+// What the supervisor's status codes mean in one short line, so the status strip
+// can say why the mentor is not ready instead of always blaming the settings.
+const LOCAL_STATUS_TEXT = {
+  'not-installed': 'runtime not installed',
+  installing: 'installing the runtime…',
+  'installed-stopped': 'runtime stopped',
+  starting: 'starting…',
+  'running-no-model': 'model not available',
+  'downloading-model': 'downloading the model…',
+  error: 'runtime error',
+};
 
 const INITIAL_MESSAGE = {
   role: 'assistant',
@@ -52,7 +68,12 @@ const markdownComponents = {
     const match = /language-(\w+)/.exec(className || '');
     const codeString = String(children).replace(/\n$/, '');
 
-    if (!inline && (match || codeString.includes('\n') || codeString.length > 40)) {
+    // react-markdown 10 stopped passing `inline`, so the block/inline decision is
+    // made from the content: a snippet is a card only when it spans lines. The
+    // old `codeString.length > 40` rule turned one-liners inside numbered lists
+    // into full code cards, which broke the list open -- the marker sat alone on
+    // one line and the sentence explaining it started with a stray ":" below.
+    if (codeString.includes('\n')) {
       return (
         <MentorCodeBlock
           code={codeString}
@@ -79,6 +100,8 @@ function MentorPanelInner({
   lessonExcerpt,
   activeSection,
   code,
+  files,
+  lesson,
   runtimeError,
   moduleId,
   onClose,
@@ -90,6 +113,7 @@ function MentorPanelInner({
   const mentorName = useUIStore((state) => state.mentorName);
   const aiProvider = useUIStore((state) => state.aiProvider);
   const mentorCustomPrompt = useUIStore((state) => state.mentorCustomPrompt);
+  const mentorPresetId = useUIStore((state) => state.mentorPresetId);
   const geminiApiKey = useUIStore((state) => state.geminiApiKey);
   const groqApiKey = useUIStore((state) => state.groqApiKey);
   const openAiApiKey = useUIStore((state) => state.openAiApiKey);
@@ -168,8 +192,13 @@ function MentorPanelInner({
       if (!cancelled) setStatus({ loading: false, available: false, models: [], error: 'Could not check the local model runtime.' });
     });
 
+    const unsubscribe = window.electronAPI?.ollama?.onStatus?.((next) => {
+      if (!cancelled && next) setStatus({ loading: false, ...next });
+    });
+
     return () => {
       cancelled = true;
+      if (unsubscribe) unsubscribe();
     };
   }, [aiProvider, geminiApiKey, groqApiKey, openAiApiKey]);
 
@@ -239,7 +268,9 @@ function MentorPanelInner({
     }) : undefined;
 
     try {
-      const effectiveSystemPrompt = mentorCustomPrompt;
+      // Sends the preset's own text when the box was never edited -- the chat used
+      // to send nothing at all and quietly answer with main.cjs's default persona.
+      const effectiveSystemPrompt = getEffectiveSystemPrompt(mentorPresetId, mentorCustomPrompt);
 
       const result = await mentorApi.ask({
         provider: aiProvider,
@@ -247,14 +278,16 @@ function MentorPanelInner({
         systemPrompt: effectiveSystemPrompt,
         question: trimmed,
         history,
-        context: {
-          lessonId,
+        context: buildMentorContext({
+          lesson: lesson || { id: lessonId, title: lessonTitle, displayContent: lessonExcerpt },
+          moduleId,
+          files,
+          code,
+          activeSection,
+          runtimeError,
           lessonTitle,
           lessonExcerpt,
-          activeSection,
-          code,
-          runtimeError,
-        },
+        }),
       });
 
       setMessages((current) => {
@@ -305,7 +338,17 @@ function MentorPanelInner({
   };
 
   const isCloud = aiProvider !== 'ollama';
-  const isReady = isCloud ? Boolean(getActiveApiKey()) : status.available;
+  const isLocalReady = status.status === 'ready' || Boolean(status.serverRunning && status.modelInstalled);
+  const isReady = isCloud ? Boolean(getActiveApiKey()) : isLocalReady;
+  const modelLabel = isCloud ? getCloudModel(aiProvider) || aiProvider.toUpperCase() : status.model || 'local model';
+  const providerLabel = PROVIDER_LABELS[aiProvider] || aiProvider;
+  const statusText = status.loading
+    ? 'Checking AI model…'
+    : isReady
+      ? `${modelLabel} · ready${isCloud ? ' (cloud)' : ' (offline)'}`
+      : isCloud
+        ? `${modelLabel} · add your ${providerLabel} API key in Settings`
+        : `${modelLabel} · ${LOCAL_STATUS_TEXT[status.status] || status.error || status.message || 'not ready — open Settings'}`;
 
   const sessionThreads = Object.entries(allConversations)
     .filter(([id, msgs]) => Array.isArray(msgs) && msgs.length > 1)
@@ -326,12 +369,11 @@ function MentorPanelInner({
     <>
       <div className="mentor-panel-header">
         <div className="mentor-panel-heading">
-          <div className="mentor-panel-icon">
-            <Bot size={20} />
-          </div>
+          <TutorAvatar size={38} isSpeaking={isSending} />
           <div>
             <div className="mentor-panel-eyebrow">
-              AI Tutor {isCloud ? `• ${aiProvider.toUpperCase()}` : '• Offline'}
+              {/* Names the model instead of the old permanent "Offline" tag. */}
+              AI Tutor • {modelLabel}
             </div>
             <h2>{mentorName || 'ReactLab Mentor'}</h2>
           </div>
@@ -405,11 +447,7 @@ function MentorPanelInner({
 
       <div className={`mentor-status${isReady ? ' is-ready' : ''}`} role="status">
         <span className="mentor-status-dot" />
-        {status.loading
-          ? 'Checking AI model…'
-          : isReady
-            ? `Ready: ${isCloud ? `${aiProvider.toUpperCase()} Cloud` : status.model || 'local model'}`
-            : status.error || status.message || 'Open Settings to configure your AI provider or API key.'}
+        {statusText}
       </div>
 
       <div style={{ position: 'relative', flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -508,7 +546,8 @@ function MentorPanelInner({
             return (
               <div key={`${message.role}-${index}`} className={`mentor-message mentor-message-${message.role}`}>
                 <div className="mentor-message-role">
-                  {isAssistant ? (mentorName || 'ReactLab Mentor') : 'You'}
+                  {isAssistant && <TutorAvatar size={22} isSpeaking={showThinking} />}
+                  <span>{isAssistant ? (mentorName || 'ReactLab Mentor') : 'You'}</span>
                 </div>
                 <div className={`mentor-message-content${showThinking ? ' mentor-thinking' : ''}`}>
                   {showThinking ? (

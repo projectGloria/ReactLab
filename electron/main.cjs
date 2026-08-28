@@ -3,6 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const { OllamaSupervisor, DEFAULT_MODEL, DEFAULT_BASE_URL } = require('./ollamaSupervisor.cjs');
+const {
+  cleanText,
+  cleanHistory,
+  buildUserPrompt,
+  MAX_CONTEXT_CHARS,
+  LOCAL_CONTEXT_CHARS,
+} = require('./mentorPrompt.cjs');
 
 // A dev run is "electron.exe", so its windows would wear Electron's own icon.
 // Packaged windows inherit the .exe icon and need nothing here -- electron-builder
@@ -15,7 +22,6 @@ const OLLAMA_BASE_URL = process.env.REACTLAB_OLLAMA_URL || DEFAULT_BASE_URL;
 const DEFAULT_MENTOR_MODEL = process.env.REACTLAB_OLLAMA_MODEL || DEFAULT_MODEL;
 const REQUEST_TIMEOUT_MS = 120_000;
 const MAX_QUESTION_CHARS = 8_000;
-const MAX_CONTEXT_CHARS = 24_000;
 
 let mainWindow = null;
 let ollamaSupervisor = null;
@@ -32,68 +38,45 @@ async function loadOllamaConfig() {
     savedOllamaConfig = {
       runtimeDir: typeof parsed.runtimeDir === 'string' ? parsed.runtimeDir : undefined,
       modelDir: typeof parsed.modelDir === 'string' ? parsed.modelDir : undefined,
+      model: typeof parsed.model === 'string' ? parsed.model : undefined,
     };
   } catch {
     savedOllamaConfig = {};
   }
 }
 
-async function saveOllamaConfig(config) {
-  savedOllamaConfig = {
-    runtimeDir: typeof config.runtimeDir === 'string' ? config.runtimeDir : undefined,
-    modelDir: typeof config.modelDir === 'string' ? config.modelDir : undefined,
-  };
+async function saveOllamaConfig(patch) {
+  const next = { ...savedOllamaConfig };
+  for (const key of ['runtimeDir', 'modelDir', 'model']) {
+    if (!(key in patch)) continue;
+    next[key] = typeof patch[key] === 'string' && patch[key].trim() ? patch[key].trim() : undefined;
+  }
+  savedOllamaConfig = next;
   await fsp.mkdir(path.dirname(getOllamaConfigPath()), { recursive: true });
   await fsp.writeFile(getOllamaConfigPath(), JSON.stringify(savedOllamaConfig, null, 2), 'utf8');
 }
 
-const MENTOR_SYSTEM_PROMPT = `You are ReactLab Mentor, a friendly, concise, and expert JavaScript & React coding tutor.
+// Fallback only: the renderer sends the learner's own persona text with every
+// question. Kept word-for-word in sync with DEFAULT_MENTOR_PROMPT in
+// src/lib/mentorPersonas.js, which is the copy Settings shows and edits.
+const MENTOR_SYSTEM_PROMPT = `You are the ReactLab Mentor, a patient and precise React and JavaScript tutor built into an offline course app. The learner is in the middle of a lesson; the lesson text, their current code, and any runtime error are attached automatically when available.
 
-Communication Rules:
-1. GREETINGS & CASUAL INPUTS: If the learner says "hello", "hi", "hey", "wait", "ok", or makes casual remarks, respond warmly and briefly in 1-2 friendly sentences (e.g. "Hello! How can I help you with this lesson?"). DO NOT dump lectures, unsolicited quiz questions, or huge code blocks unless the user actually asks a question.
-2. DIRECT QUESTIONS: When the learner asks a specific question about JavaScript or React, give a direct, clear, and concise explanation (under 3-4 short paragraphs).
-3. HINTS & CODE REVIEW: If they are stuck on a challenge or error, explain the mental model and give a focused hint first.
-4. ACCURACY: Teach React 19.2 and modern JavaScript standards. Keep responses clean, natural, and directly relevant to what the learner asked.`;
+How to answer:
+1. Match the size of the question. Greetings and small talk get one friendly sentence, not a lecture. A direct question gets a direct answer, usually under 150 words.
+2. Lead with the mental model in a sentence or two ("state is a snapshot taken per render", "effects run after paint"), then give the specific fix.
+3. When the learner is stuck on a challenge, give the next hint rather than the finished solution. Hand over the full solution only if they ask for it or have already tried and failed twice.
+4. Use the learner's own component and variable names. When their code is attached, point at the exact line or expression that is wrong instead of rewriting the file for them.
+5. Keep code blocks minimal: the smallest snippet that shows the change. No unrelated refactors, no renaming, no extra scaffolding.
+6. If a runtime error is attached, explain what the error message itself means before fixing it, so the learner can read the next one alone.
+7. Teach current React (19.x) and modern JavaScript: function components, hooks, Actions, Suspense. Mention legacy patterns only to contrast them.
+8. If you are unsure, or the question goes past the lesson, say so in one line and answer what you can. Never invent an API or a prop.`;
 
-function cleanText(value, maxChars) {
-  if (typeof value !== 'string') return '';
-  return value.trim().slice(0, maxChars);
-}
-
-function cleanHistory(history) {
-  if (!Array.isArray(history)) return [];
-  return history
-    .slice(-8)
-    .filter((message) => message && (message.role === 'user' || message.role === 'assistant'))
-    .map((message) => ({
-      role: message.role,
-      content: cleanText(message.content, 8_000),
-    }))
-    .filter((message) => message.content);
-}
-
-function buildUserPrompt({ question, context = {} }) {
-  const lessonTitle = cleanText(context.lessonTitle, 150);
-  const activeSection = context.activeSection && typeof context.activeSection === 'object' ? context.activeSection : null;
-  const activeSectionTitle = cleanText(activeSection?.title, 150);
-  const activeSectionContent = cleanText(activeSection?.content, 1_200);
-  const code = cleanText(context.code, 2_000);
-  const runtimeError = cleanText(context.runtimeError, 1_000);
-
-  const sections = [`Learner question: ${cleanText(question, 1_000)}`];
-  if (lessonTitle) sections.push(`Lesson: ${lessonTitle}`);
-  if (activeSectionTitle) sections.push(`Reading section: ${activeSectionTitle}`);
-  if (activeSectionContent) sections.push(`Section notes:\n${activeSectionContent}`);
-  if (code) sections.push(`Learner code:\n${code}`);
-  if (runtimeError) sections.push(`Runtime error:\n${runtimeError}`);
-  return sections.join('\n\n');
-}
 
 function getSupervisor() {
   if (!ollamaSupervisor) {
     ollamaSupervisor = new OllamaSupervisor({
       baseUrl: OLLAMA_BASE_URL,
-      model: DEFAULT_MENTOR_MODEL,
+      model: savedOllamaConfig.model || DEFAULT_MENTOR_MODEL,
       userDataPath: app.getPath('userData'),
       runtimeDir: savedOllamaConfig.runtimeDir,
       modelDir: savedOllamaConfig.modelDir,
@@ -170,6 +153,26 @@ ipcMain.handle('ollama:setup', async () => {
   }
 });
 
+ipcMain.handle('ollama:list-models', async () => {
+  try {
+    const supervisor = getSupervisor();
+    return { ok: true, model: supervisor.model, modelDir: supervisor.modelDir, models: await supervisor.listModels() };
+  } catch (error) {
+    return { ok: false, models: [], error: error.message };
+  }
+});
+
+ipcMain.handle('ollama:set-model', async (_event, payload = {}) => {
+  try {
+    const model = typeof payload.model === 'string' ? payload.model.trim() : '';
+    if (!model) return { ok: false, error: 'Choose a model first.' };
+    await saveOllamaConfig({ model });
+    return { ...(await getSupervisor().setModel(model)), modelSaved: true };
+  } catch (error) {
+    return { ok: false, status: 'error', error: error.message };
+  }
+});
+
 ipcMain.handle('ollama:pick-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Choose a folder',
@@ -198,7 +201,7 @@ ipcMain.handle('ollama:set-paths', async (_event, payload = {}) => {
 ipcMain.handle('ollama:reset-paths', async () => {
   try {
     if (ollamaSupervisor) await ollamaSupervisor.close();
-    await saveOllamaConfig({});
+    await saveOllamaConfig({ runtimeDir: null, modelDir: null });
     ollamaSupervisor = null;
     return { ...(await getSupervisor().getStatus()), pathsSaved: true };
   } catch (error) {
@@ -319,7 +322,7 @@ ipcMain.handle('mentor:get-status', async () => {
       available: false,
       serverRunning: false,
       modelInstalled: false,
-      defaultModel: DEFAULT_MENTOR_MODEL,
+      defaultModel: savedOllamaConfig.model || DEFAULT_MENTOR_MODEL,
       models: [],
     error: error.message || 'Ollama is not available.',
     };
@@ -337,7 +340,7 @@ async function requestGeminiStream({ apiKey, prompt, history, onChunk, systemPro
     })),
     {
       role: 'user',
-      parts: [{ text: prompt.slice(0, 4_000) }],
+      parts: [{ text: prompt.slice(0, MAX_CONTEXT_CHARS) }],
     },
   ];
 
@@ -442,7 +445,7 @@ async function requestGroq({ apiKey, prompt, history, onChunk, systemPrompt }) {
   const messages = [
     { role: 'system', content: effectiveSystemPrompt },
     ...cleanHistory(history).slice(-4),
-    { role: 'user', content: prompt.slice(0, 4_000) },
+    { role: 'user', content: prompt.slice(0, MAX_CONTEXT_CHARS) },
   ];
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -547,7 +550,11 @@ ipcMain.handle('mentor:ask', async (event, payload = {}) => {
 
   const provider = payload.provider || 'gemini';
   const systemPrompt = cleanText(payload.systemPrompt, 6_000) || MENTOR_SYSTEM_PROMPT;
-  const prompt = buildUserPrompt({ question, context: payload.context });
+  const prompt = buildUserPrompt({
+    question,
+    context: payload.context,
+    budget: provider === 'ollama' ? LOCAL_CONTEXT_CHARS : MAX_CONTEXT_CHARS,
+  });
   const senderWebContents = event.sender;
   const onChunk = (chunk) => {
     if (senderWebContents && !senderWebContents.isDestroyed()) {
@@ -587,9 +594,9 @@ ipcMain.handle('mentor:ask', async (event, payload = {}) => {
   }
 
   // 2. Offline Ollama Fallback
-  const model = cleanText(payload.model, 200) || DEFAULT_MENTOR_MODEL;
+  const supervisor = getSupervisor();
+  const model = cleanText(payload.model, 200) || supervisor.model || DEFAULT_MENTOR_MODEL;
   try {
-    const supervisor = getSupervisor();
     let status = await supervisor.getStatus();
     if (!status.serverRunning) {
       status = await supervisor.startServer();
@@ -603,11 +610,16 @@ ipcMain.handle('mentor:ask', async (event, payload = {}) => {
       model,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...cleanHistory(payload.history),
-        { role: 'user', content: prompt.slice(0, 8_000) },
+        ...cleanHistory(payload.history, { maxMessages: 4, maxChars: 1_200 }),
+        { role: 'user', content: prompt.slice(0, LOCAL_CONTEXT_CHARS + 2_000) },
       ],
       options: {
-        num_ctx: 2048,
+        // The prompt now carries the lesson itself (see buildUserPrompt), which
+        // does not fit in the 2048 this used to ask for -- the tail of the
+        // lesson, and sometimes the question, fell out of the window. Kept at
+        // 6144 rather than 8192 because the KV cache is real memory on the
+        // learner's machine, and LOCAL_CONTEXT_CHARS is sized to fit this.
+        num_ctx: 6144,
         num_predict: 512,
         temperature: 0.3,
       },

@@ -71,7 +71,7 @@ export default function LessonView() {
   const [showChallenge, setShowChallenge] = useState(false);
   const [showEditor, setShowEditor] = useState(true); // default true for rich side-by-side experience
   const [showSpeechModal, setShowSpeechModal] = useState(false);
-  const [mentorContext, setMentorContext] = useState({ code: '', runtimeError: '' });
+  const [mentorContext, setMentorContext] = useState({ code: '', files: null, runtimeError: '' });
 
   const setMentorContextSafe = useCallback((newCtx) => {
     setMentorContext((prev) => {
@@ -1070,8 +1070,10 @@ export default function LessonView() {
                       moduleId={moduleId}
                       lessonTitle={parsedLesson.title}
                       lessonExcerpt={parsedLesson.displayContent}
+                      lesson={parsedLesson}
                       activeSection={activeSection}
                       code={mentorContext.code}
+                      files={mentorContext.files}
                       runtimeError={mentorContext.runtimeError}
                       onClose={() => closeMentor()}
                       isInline={true}
@@ -1386,8 +1388,10 @@ export default function LessonView() {
                         moduleId={moduleId}
                         lessonTitle={parsedLesson.title}
                         lessonExcerpt={parsedLesson.displayContent}
+                        lesson={parsedLesson}
                         activeSection={activeSection}
                         code={mentorContext.code}
+                        files={mentorContext.files}
                         runtimeError={mentorContext.runtimeError}
                         onClose={() => closeMentor()}
                         isInline={true}

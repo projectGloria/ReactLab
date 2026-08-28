@@ -41,16 +41,20 @@ export default function DetachedWindow() {
 
   if (type === 'mentor') {
     return (
-      <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#141413' }}>
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#141413', overflow: 'hidden' }}>
         <TitleBar title="AI Mentor" subtitle={parsedLesson?.title || 'Lesson Tutor'} />
-        <div style={{ flex: 1, minHeight: 0 }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <MentorPanel
             lessonId={lessonId}
             moduleId={moduleId}
             lessonTitle={parsedLesson?.title || 'Lesson Tutor'}
             lessonExcerpt={parsedLesson?.displayContent || ''}
+            lesson={parsedLesson}
             activeSection={null}
             code={typeof parsedLesson?.executableExample === 'string' ? parsedLesson.executableExample : ''}
+            /* The same file map the playground runs, learner edits included, so a
+               popped-out chat knows as much about the code as the docked one. */
+            files={sandpackFiles}
             runtimeError=""
             isDetached={true}
           />

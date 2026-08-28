@@ -32,6 +32,48 @@ function quotePowerShell(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+// Ollama stores every pulled model as manifests/<registry>/<namespace>/<name>/<tag>,
+// so a model folder can be read without a running server. That matters here: the
+// status card used to report "model not downloaded" for a model sitting on disk,
+// because the only thing it ever asked was /api/tags.
+const LIBRARY_REGISTRIES = new Set(['registry.ollama.ai', 'ollama.com']);
+
+// `qwen2.5-coder` and `qwen2.5-coder:latest` are the same model to Ollama.
+function normalizeModelName(name) {
+  const value = cleanString(name);
+  if (!value) return '';
+  return value.includes(':') ? value : `${value}:latest`;
+}
+
+function manifestPathToModelName(segments) {
+  if (segments.length < 3) return '';
+  const [registry, ...rest] = segments;
+  const tag = rest.pop();
+  const namespace = rest.shift();
+  const name = [...rest].join('/');
+  const bare = name ? `${namespace}/${name}` : namespace;
+  const shortName = LIBRARY_REGISTRIES.has(registry) && namespace === 'library' ? name || namespace : bare;
+  const prefix = LIBRARY_REGISTRIES.has(registry) ? '' : `${registry}/`;
+  return `${prefix}${shortName}:${tag}`;
+}
+
+async function walkFiles(dir, depth = 0, maxDepth = 6) {
+  if (depth > maxDepth) return [];
+  let entries;
+  try {
+    entries = await fsp.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const found = [];
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...await walkFiles(full, depth + 1, maxDepth));
+    else if (entry.isFile()) found.push(full);
+  }
+  return found;
+}
+
 class OllamaSupervisor extends EventEmitter {
   constructor({ baseUrl = DEFAULT_BASE_URL, model = DEFAULT_MODEL, userDataPath, runtimeDir, modelDir, runtimePath }) {
     super();
@@ -47,8 +89,19 @@ class OllamaSupervisor extends EventEmitter {
       const siblingModelDir = runtimePath
         ? path.resolve(path.dirname(runtimePath), '..', 'OllamaModels')
         : '';
-      const candidates = [siblingModelDir, isWindows() ? 'D:\\AI\\OllamaModels' : '', path.join(userDataPath, 'ollama-models')];
-      this.modelDir = candidates.find((candidate) => candidate && fs.existsSync(candidate)) || path.join(userDataPath, 'ollama-models');
+      const homeModelDir = path.join(process.env.USERPROFILE || os.homedir(), '.ollama', 'models');
+      const fallback = path.join(userDataPath, 'ollama-models');
+      const candidates = unique([
+        siblingModelDir,
+        homeModelDir,
+        isWindows() ? 'D:\\AI\\OllamaModels' : '',
+        fallback,
+      ]).filter((candidate) => fs.existsSync(candidate));
+      // A folder that already holds manifests wins over one that merely exists:
+      // an empty sibling folder used to shadow the real model store.
+      this.modelDir = candidates.find((candidate) => fs.existsSync(path.join(candidate, 'manifests')))
+        || candidates[0]
+        || fallback;
     }
     if (!hasConfiguredRuntimeDir && this.runtimePath) {
       this.runtimeDir = path.dirname(this.runtimePath);
@@ -95,7 +148,14 @@ class OllamaSupervisor extends EventEmitter {
       localAppData ? path.join(localAppData, 'Programs', 'Ollama', isWindows() ? 'ollama.exe' : 'ollama') : '',
       localAppData ? path.join(localAppData, 'Ollama', isWindows() ? 'ollama.exe' : 'ollama') : '',
       userProfile ? path.join(userProfile, '.ollama', isWindows() ? 'ollama.exe' : 'ollama') : '',
+      isWindows() ? path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe') : '',
       isWindows() ? 'D:\\AI\\Ollama\\ollama.exe' : '',
+      // Anything already on PATH: an Ollama installed by winget/scoop/a package
+      // manager lands somewhere none of the fixed guesses above cover.
+      ...String(process.env.PATH || '')
+        .split(path.delimiter)
+        .filter(Boolean)
+        .map((entry) => path.join(entry.trim(), isWindows() ? 'ollama.exe' : 'ollama')),
     ];
     return unique(
       rawCandidates
@@ -144,7 +204,78 @@ class OllamaSupervisor extends EventEmitter {
   }
 
   modelIsInstalled(models) {
-    return models.some((item) => item?.name === this.model || item?.model === this.model);
+    const wanted = normalizeModelName(this.model);
+    return models.some((item) => {
+      const candidates = typeof item === 'string' ? [item] : [item?.name, item?.model];
+      return candidates.some((candidate) => normalizeModelName(candidate) === wanted);
+    });
+  }
+
+  // Read the model folder directly. Used both when no server is running and to
+  // surface models the running server does not serve (its OLLAMA_MODELS may differ).
+  async scanModelDirectory(dir = this.modelDir) {
+    const manifestRoot = dir ? path.join(dir, 'manifests') : '';
+    if (!manifestRoot || !fs.existsSync(manifestRoot)) return [];
+    const files = await walkFiles(manifestRoot);
+    const found = [];
+    for (const file of files) {
+      const segments = path.relative(manifestRoot, file).split(path.sep).filter(Boolean);
+      const name = manifestPathToModelName(segments);
+      if (!name) continue;
+      let size = 0;
+      try {
+        const manifest = JSON.parse(await fsp.readFile(file, 'utf8'));
+        const layers = Array.isArray(manifest.layers) ? manifest.layers : [];
+        size = layers.reduce((total, layer) => total + (Number(layer?.size) || 0), 0)
+          + (Number(manifest?.config?.size) || 0);
+      } catch {
+        continue; // not a manifest: ignore stray files under manifests/
+      }
+      found.push({ name, size });
+    }
+    return found;
+  }
+
+  // The union of what the server serves and what the model folder holds, so the
+  // settings card can offer every model this machine actually has.
+  async listModels() {
+    const tags = await this.readTags();
+    return this.mergeModels(tags.models, await this.scanModelDirectory());
+  }
+
+  mergeModels(serverModels, diskModels) {
+    const merged = new Map();
+    for (const item of serverModels) {
+      const name = cleanString(item?.name || item?.model);
+      if (!name) continue;
+      merged.set(normalizeModelName(name), {
+        name,
+        size: Number(item?.size) || 0,
+        parameterSize: cleanString(item?.details?.parameter_size),
+        quantization: cleanString(item?.details?.quantization_level),
+        family: cleanString(item?.details?.family),
+        source: 'server',
+      });
+    }
+    for (const item of diskModels) {
+      const key = normalizeModelName(item.name);
+      const existing = merged.get(key);
+      if (existing) {
+        existing.source = 'both';
+        if (!existing.size) existing.size = item.size;
+      } else {
+        merged.set(key, { name: item.name, size: item.size, parameterSize: '', quantization: '', family: '', source: 'disk' });
+      }
+    }
+    return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async setModel(model) {
+    const next = cleanString(model);
+    if (!next) throw new Error('Choose a model name first.');
+    this.model = next;
+    this.lastError = '';
+    return this.getStatus();
   }
 
   deriveState({ runtimeInstalled, serverRunning, modelInstalled }) {
@@ -164,6 +295,8 @@ class OllamaSupervisor extends EventEmitter {
       serverRunning: Boolean(this.child) || Boolean(overrides.serverRunning),
       ownedProcess: Boolean(this.child),
       modelInstalled: overrides.modelInstalled ?? null,
+      modelOnDisk: overrides.modelOnDisk ?? null,
+      availableModels: overrides.availableModels || [],
       model: this.model,
       modelDir: this.modelDir,
       runtimeDir: this.runtimeDir,
@@ -183,19 +316,34 @@ class OllamaSupervisor extends EventEmitter {
   async getStatus() {
     const runtimePath = this.findRuntimePath();
     const tags = await this.readTags();
-    const modelInstalled = tags.available ? this.modelIsInstalled(tags.models) : null;
+    const diskModels = await this.scanModelDirectory();
+    const availableModels = this.mergeModels(tags.models, diskModels);
+    const modelOnDisk = this.modelIsInstalled(diskModels);
+    // While the server is up, "installed" means "this server serves it" -- a model
+    // sitting in the configured folder is useless to a server pointed elsewhere.
+    const modelInstalled = tags.available ? this.modelIsInstalled(tags.models) : modelOnDisk;
     const status = this.deriveState({
       runtimeInstalled: Boolean(runtimePath),
       serverRunning: tags.available,
       modelInstalled: Boolean(modelInstalled),
     });
+    // The confusing case worth naming: an Ollama the app did not start is holding
+    // the port with a different OLLAMA_MODELS, so a model that is plainly on disk
+    // never shows up in /api/tags.
+    const strandedOnDisk = tags.available && !modelInstalled && modelOnDisk && !this.child;
     return this.publish(this.statusPayload({
       status,
       runtimeInstalled: Boolean(runtimePath),
       runtimePath,
       serverRunning: tags.available,
+      externalServer: tags.available && !this.child,
       modelInstalled,
-      models: tags.models.map((item) => item?.name || item?.model).filter(Boolean),
+      modelOnDisk,
+      availableModels,
+      models: availableModels.map((item) => item.name),
+      message: strandedOnDisk
+        ? `${this.model} is in ${this.modelDir}, but the Ollama server already running on ${this.baseUrl} serves a different model folder. Pick one of its models below, or close that Ollama so ReactLab can start its own.`
+        : this.lastError,
     }));
   }
 

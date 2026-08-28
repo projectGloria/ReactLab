@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Sparkles, Key, CheckCircle2, Zap, Shield, HardDriveDownload, ExternalLink } from 'lucide-react';
 import useUIStore from '../../store/useUIStore';
 import OllamaSettings from './OllamaSettings';
+import { PERSONA_PRESETS, getPersonaPreset } from '../../lib/mentorPersonas.js';
+import { CLOUD_MODELS } from '../../lib/aiProviders.js';
 
 const PROVIDERS = [
   {
     id: 'gemini',
     name: 'Google Gemini',
     tagline: 'Recommended • Fast & Free tier',
-    model: 'gemini-3.6-flash',
+    model: CLOUD_MODELS.gemini,
     icon: Sparkles,
     badge: 'Blazing Fast (500ms)',
     getKeyUrl: 'https://aistudio.google.com/app/apikey',
@@ -17,7 +19,7 @@ const PROVIDERS = [
     id: 'groq',
     name: 'Groq Cloud',
     tagline: 'Ultra-fast Llama 3.3 70B',
-    model: 'llama-3.3-70b-versatile',
+    model: CLOUD_MODELS.groq,
     icon: Zap,
     badge: 'Ultra Fast',
     getKeyUrl: 'https://console.groq.com/keys',
@@ -26,7 +28,7 @@ const PROVIDERS = [
     id: 'openai',
     name: 'OpenAI',
     tagline: 'GPT-4o Mini',
-    model: 'gpt-4o-mini',
+    model: CLOUD_MODELS.openai,
     icon: Shield,
     badge: 'High Accuracy',
     getKeyUrl: 'https://platform.openai.com/api-keys',
@@ -283,68 +285,18 @@ export default function AIMentorSettings() {
   );
 }
 
-const PERSONA_PRESETS = [
-  {
-    id: 'default',
-    title: 'Balanced Master Tutor',
-    tagline: 'Default • React 19 Socratic + Hint-first',
-    prompt: `You are ReactLab Mentor, a friendly, concise, and expert JavaScript & React coding tutor.
-
-Communication Rules:
-1. GREETINGS & CASUAL INPUTS: If the learner says "hello", "hi", "hey", "wait", "ok", or makes casual remarks, respond warmly and briefly in 1-2 friendly sentences (e.g. "Hello! How can I help you with this lesson?"). DO NOT dump lectures, unsolicited quiz questions, or huge code blocks unless the user actually asks a question.
-2. DIRECT QUESTIONS: When the learner asks a specific question about JavaScript or React, give a direct, clear, and concise explanation (under 3-4 short paragraphs).
-3. HINTS & CODE REVIEW: If they are stuck on a challenge or error, explain the mental model and give a focused hint first.
-4. ACCURACY: Teach React 19.2 and modern JavaScript standards. Keep responses clean, natural, and directly relevant to what the learner asked.`,
-  },
-  {
-    id: 'socratic',
-    title: 'Strict Socratic',
-    tagline: 'Guiding questions only • Never gives direct code solutions',
-    prompt: `You are ReactLab Socratic Guide.
-Your purpose is to help the learner discover the solution themselves through targeted inquiry.
-
-Core Directives:
-1. NEVER provide full solution code or direct copy-paste answers.
-2. Ask one or two thought-provoking questions that guide the student to spot their own bug or missing concept.
-3. If the student asks for the answer, gently reframe the problem into a smaller, simpler question.
-4. Keep answers brief (under 120 words). Emphasize React 19 mental models and mechanics.`,
-  },
-  {
-    id: 'terse',
-    title: 'Terse & Direct',
-    tagline: '1-2 sentences • Code snippets over prose',
-    prompt: `You are ReactLab Terse Assistant.
-You provide minimal, laser-focused technical assistance for experienced developers.
-
-Core Directives:
-1. Limit explanations to 1-2 sharp sentences maximum.
-2. Provide concise, clean React 19 code snippets or diffs with no fluff or pleasantries.
-3. Jump straight to the exact root cause of syntax or logic errors.`,
-  },
-  {
-    id: 'conceptual',
-    title: 'Deep Conceptualist',
-    tagline: 'Explains internal runtimes & memory mental models first',
-    prompt: `You are ReactLab Deep Conceptualist.
-You teach React from first principles and runtime mechanics.
-
-Core Directives:
-1. Always explain the underlying mechanism first (e.g., Fiber reconciliation, JS closures, immutable references, snapshot rendering) before proposing a fix.
-2. Use clear, rigorous mental models and call out why earlier workarounds existed vs. modern React 19 patterns.
-3. After the conceptual breakdown, provide a focused hint for the lesson challenge.`,
-  },
-];
-
 function MentorPersonaSection() {
   const { mentorPresetId, setMentorPresetId, mentorCustomPrompt, setMentorCustomPrompt } = useUIStore();
   const [toast, setToast] = useState(false);
 
-  const activePreset = PERSONA_PRESETS.find((p) => p.id === mentorPresetId) || PERSONA_PRESETS[0];
-  const effectivePrompt = mentorCustomPrompt || activePreset.prompt;
+  const activePreset = getPersonaPreset(mentorPresetId);
+  // `?? ` not `|| `: an empty box is a deliberate choice, not "unset".
+  const effectivePrompt = mentorCustomPrompt ?? activePreset.prompt;
+  const isCustomised = typeof mentorCustomPrompt === 'string' && mentorCustomPrompt !== activePreset.prompt;
 
   const handleSelectPreset = (preset) => {
     setMentorPresetId(preset.id);
-    setMentorCustomPrompt(preset.prompt);
+    setMentorCustomPrompt(null);
     setToast(true);
     setTimeout(() => setToast(false), 2000);
   };
@@ -354,7 +306,7 @@ function MentorPersonaSection() {
   };
 
   const handleResetToPreset = () => {
-    setMentorCustomPrompt(activePreset.prompt);
+    setMentorCustomPrompt(null);
     setToast(true);
     setTimeout(() => setToast(false), 2000);
   };
@@ -421,6 +373,9 @@ function MentorPersonaSection() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#a8a29e' }}>
             Active System Instructions ({effectivePrompt.length} / 4000 chars)
+            <span style={{ marginLeft: '6px', color: isCustomised ? 'var(--accent-primary, #d97757)' : '#78716c', fontWeight: 700 }}>
+              {isCustomised ? '• edited' : `• ${activePreset.title} preset`}
+            </span>
           </label>
           <button
             type="button"
@@ -440,7 +395,8 @@ function MentorPersonaSection() {
         <textarea
           value={effectivePrompt}
           onChange={(e) => handlePromptChange(e.target.value)}
-          rows={6}
+          rows={14}
+          spellCheck={false}
           placeholder="Enter custom mentor persona instructions..."
           style={{
             width: '100%',
@@ -457,8 +413,13 @@ function MentorPersonaSection() {
           }}
         />
         <div style={{ fontSize: '0.68rem', color: '#78716c', lineHeight: 1.4 }}>
-          💡 <strong>Tip:</strong> Specify tone, concise response limits, and whether you prefer hints over complete solutions. Lesson context & code are injected automatically.
+          💡 <strong>Tip:</strong> Edit this text freely — it is sent verbatim as the mentor's system prompt. Specify tone, response length, and whether you prefer hints over complete solutions. Lesson context, your code, and any runtime error are appended automatically.
         </div>
+        {effectivePrompt.trim().length === 0 && (
+          <div style={{ fontSize: '0.68rem', color: '#d9a057', lineHeight: 1.4 }}>
+            The box is empty, so the mentor falls back to ReactLab's built-in instructions. Use “Reset to preset default” to bring the persona text back.
+          </div>
+        )}
       </div>
     </div>
   );

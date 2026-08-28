@@ -69,8 +69,13 @@ const useUIStore = create(
       setMentorName: (mentorName) => set({ mentorName: mentorName?.trim() || 'ReactLab Mentor' }),
       mentorPresetId: 'default',
       setMentorPresetId: (mentorPresetId) => set({ mentorPresetId }),
-      mentorCustomPrompt: '',
-      setMentorCustomPrompt: (mentorCustomPrompt) => set({ mentorCustomPrompt }),
+      // null = follow the selected persona preset. A string (including '') is the
+      // learner's own text: clearing the box used to snap straight back to the
+      // preset, which made the field look read-only.
+      mentorCustomPrompt: null,
+      setMentorCustomPrompt: (mentorCustomPrompt) => set({
+        mentorCustomPrompt: typeof mentorCustomPrompt === 'string' ? mentorCustomPrompt : null,
+      }),
       aiProvider: 'gemini', // 'gemini' | 'groq' | 'openai' | 'ollama'
       geminiApiKey: '',
       groqApiKey: '',
@@ -130,6 +135,8 @@ const useUIStore = create(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Older builds persisted '' for "never edited"; keep that meaning.
+          if (state.mentorCustomPrompt === '') state.mentorCustomPrompt = null;
           sounds.setEnabled(state.isSoundEnabled ?? true);
           sounds.setProfile(state.soundProfile || 'mechanical');
           if (state.soundVolume !== undefined) sounds.setVolume(state.soundVolume);

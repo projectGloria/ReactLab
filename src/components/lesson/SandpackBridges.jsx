@@ -44,16 +44,27 @@ export function SandpackCacher({ lessonId, ownedFiles }) {
 // the lesson's authored files -- the reset ran against an instance that had just
 // been created and had nothing to undo.
 
-/** Feeds the current code and any runtime error to the AI mentor panel. */
+/**
+ * Feeds the current code and any runtime error to the AI mentor panel.
+ *
+ * Reports the file map as well as the joined string: the mentor prompt lists the
+ * playground file by file (App.js, styles.css, ...) so the model can be told
+ * which file a question is about instead of parsing `// /path` comments back out.
+ */
 export function SandpackContextReporter({ onContext }) {
   const { sandpack } = useSandpack();
 
   useEffect(() => {
-    const code = Object.entries(sandpack.files || {})
-      .map(([filePath, file]) => `// ${filePath}\n${file.code || ''}`)
+    const files = {};
+    for (const [filePath, file] of Object.entries(sandpack.files || {})) {
+      if (isInternalSandpackFile(filePath)) continue;
+      files[filePath] = file.code || '';
+    }
+    const code = Object.entries(files)
+      .map(([filePath, fileCode]) => `// ${filePath}\n${fileCode}`)
       .join('\n\n');
     const runtimeError = sandpack.error?.message || sandpack.error || '';
-    onContext({ code, runtimeError: String(runtimeError) });
+    onContext({ code, files, runtimeError: String(runtimeError) });
   }, [onContext, sandpack.error, sandpack.files]);
 
   return null;
