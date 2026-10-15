@@ -1,5 +1,7 @@
+// v5 — 2026-09-14 — hide the preview for lessons with no renderable App; wire up
+//   the readOnly prop; stop prepending a dead styles.css import; drop a stray BOM.
 // v4 — 2026-08-18 — narrow Zustand subscriptions to required state slices
-﻿import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, Code2, Copy, Check, Play, Eye, EyeOff, GitCompare, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -10,6 +12,10 @@ import useModalDialog from './useModalDialog.js';
 import FormatButton from './FormatButton.jsx';
 import useProgressStore from '../../store/useProgressStore.js';
 import SANDPACK_THEME from '../../lib/sandpackTheme.js';
+import SandpackOfflineNotice from './SandpackOfflineNotice.jsx';
+import SandpackOfflineFallback from './SandpackOfflineFallback.jsx';
+import { isTypeScriptModule } from './useLessonSandpack.js';
+import TypeDiagnostics from './TypeDiagnostics.jsx';
 
 const DEFAULT_STYLES = 'body { background-color: #141413; color: #ededed; font-family: system-ui, sans-serif; padding: 16px; margin: 0; box-sizing: border-box; overflow: hidden; } * { box-sizing: border-box; }';
 
@@ -27,10 +33,13 @@ function normalizeChallengeFiles(source, appFile) {
 function createSandpackFiles(source, appFile) {
   const files = {};
   for (const [path, sourceCode] of Object.entries(normalizeChallengeFiles(source, appFile))) {
-    const code = path === appFile && !sourceCode.includes('styles.css')
-      ? `import './styles.css';\n\n${sourceCode}`
-      : sourceCode;
-    files[path] = { code, active: path === appFile };
+    // The stylesheet is *not* imported into the entry file here. Sandpack's
+    // react and react-ts templates already import it from their own entry, so
+    // the sheet is applied before the lesson's component is reached -- the same
+    // reasoning `stripStylesheetImport` in lessonContent.js documents for the
+    // lesson playground. Prepending it added a dead line to the top of every
+    // challenge, and made the two code paths disagree about the same fact.
+    files[path] = { code: sourceCode, active: path === appFile };
   }
 
   if (!files['/styles.css']) files['/styles.css'] = { code: DEFAULT_STYLES, hidden: true };
@@ -88,7 +97,7 @@ function DiffView({ starterCode, solutionCode, activeFile }) {
 }
 
 // ─── Code Viewer (Sandpack) ───────────────────────────────────────────────────
-function SandpackCodePanel({ label, subLabel }) {
+function SandpackCodePanel({ label, subLabel, readOnly = false }) {
   const [copied, setCopied] = useState(false);
   const { sandpack } = useSandpack();
   const handleCopy = () => {
@@ -131,7 +140,7 @@ function SandpackCodePanel({ label, subLabel }) {
       </div>
       <div style={{ flex: 1, overflow: 'hidden', backgroundColor: 'var(--bg-app)' }}>
         <SandpackLayout style={{ height: '100%', border: 'none', borderRadius: 0, minHeight: 'auto' }}>
-          <SandpackCodeEditor showLineNumbers={true} />
+          <SandpackCodeEditor showLineNumbers={true} readOnly={readOnly} />
         </SandpackLayout>
       </div>
     </div>
@@ -171,7 +180,7 @@ export default function ChallengeModal({ lesson, nextLessonPath, challenge, solu
 
   const hasSolution = !!solutionCode;
 
-  const isTypeScript = lesson.moduleId === 'typescript';
+  const isTypeScript = isTypeScriptModule(lesson.moduleId);
   const appFile = isTypeScript ? '/App.tsx' : '/App.js';
   const template = isTypeScript ? 'react-ts' : 'react';
   const starterFiles = useMemo(() => normalizeChallengeFiles(starterCode, appFile), [starterCode, appFile]);
@@ -232,6 +241,18 @@ export default function ChallengeModal({ lesson, nextLessonPath, challenge, solu
     }
     return createSandpackFiles(localFiles, appFile);
   }, [solutionState, solutionCode, localFiles, appFile]);
+
+  // Sandpack's entry does `import App from "./App"` and renders it. A lesson
+  // whose files have no App with a default export therefore renders either a
+  // runtime error (plain-DOM lessons like what-is-react, js-promises) or the
+  // react template's own placeholder app (the test-file lessons, which have no
+  // App at all). Neither teaches anything, so those lessons get the editor plus
+  // an explanation instead of a preview -- mirroring useLessonSandpack's
+  // `isRunnable`, which the lesson playground has had all along.
+  const isRunnable = useMemo(() => {
+    const entry = sandpackFiles[appFile]?.code;
+    return typeof entry === 'string' && /export\s+default/.test(entry);
+  }, [sandpackFiles, appFile]);
 
   // Active file for diff (first non-hidden file)
   const activeFile = useMemo(() => {
@@ -492,6 +513,7 @@ export default function ChallengeModal({ lesson, nextLessonPath, challenge, solu
           {/* Right: Code Panel */}
           <div className="challenge-code-panel" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <SandpackProvider template={template} theme={SANDPACK_THEME} files={sandpackFiles} customSetup={customSetup} options={{ autorun: true }}>
+              <SandpackOfflineNotice dependencies={lesson.dependencies} />
               {/* Solution banner */}
               <AnimatePresence>
                 {solutionState === 'showing' && (
@@ -543,16 +565,32 @@ export default function ChallengeModal({ lesson, nextLessonPath, challenge, solu
                 {/* Live Preview (Bottom Half) */}
                 <div style={{ height: '45%', display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-panel)', minHeight: 0 }}>
                   <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-subtle)', backgroundColor: '#1e1e1e', color: '#888', fontSize: '0.75rem', fontFamily: 'monospace', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Live Preview ({codeLabel})</span>
+                    <span>{isRunnable ? `Live Preview (${codeLabel})` : 'No preview for this exercise'}</span>
                     {solutionState !== 'showing' && (
                       <CodeActions lesson={lesson} nextLessonPath={nextLessonPath} />
                     )}
                   </div>
                   <div style={{ flex: 1, overflow: 'hidden', position: 'relative', backgroundColor: '#141413' }}>
-                    <SandpackLayout style={{ height: '100%', border: 'none', borderRadius: 0, minHeight: 'auto' }}>
-                      <SandpackPreview style={{ height: '100%', flex: 1, border: 'none' }} showOpenInCodeSandbox={false} showRefreshButton={true} />
-                    </SandpackLayout>
+                    {isRunnable ? (
+                      <SandpackOfflineFallback dependencies={lesson.dependencies} entryFile={appFile}>
+                        <SandpackLayout style={{ height: '100%', border: 'none', borderRadius: 0, minHeight: 'auto' }}>
+                          <SandpackPreview style={{ height: '100%', flex: 1, border: 'none' }} showOpenInCodeSandbox={false} showRefreshButton={true} />
+                        </SandpackLayout>
+                      </SandpackOfflineFallback>
+                    ) : (
+                      <div style={{
+                        height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '16px 32px', textAlign: 'center',
+                        color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.6
+                      }}>
+                        This exercise has no component to render — it is code to read and edit.
+                        Check Answer still grades what you write.
+                      </div>
+                    )}
                   </div>
+                  {/* Reports, never blocks: Check Answer still grades the code
+                      the learner wrote, exactly as it does everywhere else. */}
+                  <TypeDiagnostics enabled={isTypeScript} />
                 </div>
               </div>
             </SandpackProvider>

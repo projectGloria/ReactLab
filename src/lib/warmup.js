@@ -29,7 +29,8 @@ export async function warmupApp(onProgress = () => {}) {
   // Stage 2: Pre-warm Babel transpiler & AST parser (25% -> 50%)
   report(35, 'Warming offline React 19 compiler...');
   try {
-    // Run an initial Babel compilation to warm up the AST engine and module scopes
+    // Not decorative: this is the same transpiler the offline playground uses,
+    // so warming it here is what keeps the first offline preview instant.
     const dummyCode = 'export default function Probe() { return <div className="warm">Warmup</div>; }';
     transpileCode(dummyCode, 'Probe.jsx');
   } catch (e) {
@@ -44,10 +45,12 @@ export async function warmupApp(onProgress = () => {}) {
     console.debug('[Warmup] Formatter warm-up:', e);
   }
 
-  // Stage 4: Pre-warm curriculum registry and all 14 module payloads into memory cache (75% -> 95%)
+  // Stage 4: Pre-warm the curriculum registry and every module payload (75% -> 95%)
   report(80, 'Caching curriculum modules & challenge validators...');
   try {
-    // Dynamically load all 14 curriculum modules in parallel so navigation has zero async network delay
+    // Load every curriculum module in parallel so navigation has no async delay.
+    // Counted from the registry rather than hardcoded -- this said "14 modules"
+    // for a long time after the course grew past that.
     const modulePromises = curriculum.map((mod) =>
       import(`../curriculum/modules/${mod.id}.js`).catch((err) => {
         console.warn(`[Warmup] Failed to preload module ${mod.id}:`, err);

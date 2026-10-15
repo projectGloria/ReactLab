@@ -649,6 +649,30 @@
   opacity: 1;
 }
 
+/* The language flag fades in with the other header actions so the heading row
+   stays quiet while reading. Keyboard users still get it via :focus-visible. */
+.lesson-prose-header-group .lesson-language-toggle {
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lesson-prose-header-group:hover .lesson-language-toggle,
+.lesson-prose-header-group .lesson-language-toggle:focus-visible {
+  opacity: 1;
+}
+
+/* Dimmed while Turkish is selected but this particular lesson has no
+   translation yet, so the English text on screen is explained rather than
+   looking like the toggle failed. */
+.lesson-prose-header-group:hover .lesson-language-toggle.is-untranslated,
+.lesson-prose-header-group .lesson-language-toggle.is-untranslated:focus-visible {
+  opacity: 0.55;
+}
+
+.lesson-language-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
 .lesson-view-header {
   display: flex;
   align-items: center;

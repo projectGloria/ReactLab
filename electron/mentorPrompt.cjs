@@ -83,7 +83,23 @@ function renderContextSection(key, context) {
  * function read only the title, the active section and 2 000 characters of code,
  * so the mentor answered questions about a lesson it had never read.
  */
-function buildUserPrompt({ question, context = {}, budget = MAX_CONTEXT_CHARS }) {
+// Answer language is an instruction, not a translation step: the lesson text in
+// the context block may be Turkish while the code and React's own API names stay
+// English, and the model has to be told to keep it that way rather than
+// helpfully translating `useState` or the learner's variable names.
+const LANGUAGE_DIRECTIVE = {
+  tr: [
+    'Yanıtını Türkçe yaz.',
+    'Kod, API adları (useState, useEffect gibi) ve hata mesajları İngilizce kalsın — bunları çevirme.',
+    'Teknik terimlerin yaygın Türkçe karşılığı varsa onu kullan, yoksa İngilizcesini bırak.',
+  ].join(' '),
+};
+
+function languageDirective(language) {
+  return LANGUAGE_DIRECTIVE[language] || '';
+}
+
+function buildUserPrompt({ question, context = {}, budget = MAX_CONTEXT_CHARS, language = 'en' }) {
   const header = [
     cleanText(context.lessonTitle, 150) && `Lesson: ${cleanText(context.lessonTitle, 150)}`,
     cleanText(context.moduleTitle, 150) && `Module: ${cleanText(context.moduleTitle, 150)}${context.position ? ` (${cleanText(context.position, 60)})` : ''}`,
@@ -105,6 +121,7 @@ function buildUserPrompt({ question, context = {}, budget = MAX_CONTEXT_CHARS })
   }
 
   const blocks = [
+    languageDirective(language),
     `Learner question: ${cleanText(question, 1_000)}`,
     header,
     ...kept.map((section) => `## ${section.title}\n${section.body}`),
@@ -117,6 +134,7 @@ module.exports = {
   cleanText,
   cleanHistory,
   buildUserPrompt,
+  languageDirective,
   renderContextSection,
   CONTEXT_SECTIONS,
   MAX_CONTEXT_CHARS,

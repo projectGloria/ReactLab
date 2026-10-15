@@ -1,13 +1,31 @@
+import curriculum from './index.js';
+
 export const moduleOverviews = {
+  "intro": {
+    badge: "MODULE 01 • GETTING STARTED",
+    tagline: "Before the first component: what React is for.",
+    subtitle: "By the end of this module you can explain what React does for you, and read the import lines that sit at the top of every file in this course.",
+    whatIsIt: "Two short lessons with no React in them yet. The first shows what updating a page by hand costs, so that React's answer to it makes sense. The second explains how files share code with each other, which is what every `import` line in the rest of the course is doing.",
+    whyLearnIt: "React is usually taught starting from its syntax, which leaves the reader typing something that works without knowing what it replaced. Seeing the manual version once makes the rest of the course feel like an answer rather than a ritual.",
+    withoutThisReact: "Skipping this is survivable, but `import { useState } from 'react'` then stays a magic incantation, and the first confusing build error has nothing to attach itself to.",
+    keyTakeaways: [
+      { title: "The Core Problem", desc: "Data and screen are two copies of the same truth, and keeping them in step by hand is the job React removes." },
+      { title: "Files Share Code", desc: "`export` offers something up; `import` collects it. A bare package name means code installed into node_modules." },
+      { title: "Project Shape", desc: "Recognize package.json, node_modules, and the entry point you will meet in any React project." }
+    ],
+    codePreview: `count = count + 1;
+render(); // the line React lets you stop writing`
+  },
+
   "capstones": { badge: "MODULE • CAPSTONES", tagline: "Stop practicing fragments. Build applications.", subtitle: "Three integration projects that force state, data, routing, testing, performance, and architecture decisions to coexist.", whatIsIt: "Application-scale project briefs that require the learner to integrate multiple course concepts and defend architectural choices.", whyLearnIt: "A developer can pass isolated challenges and still struggle to design a coherent application. Capstones expose that gap.", withoutThisReact: "Without integration work, course completion can create false confidence about production readiness.", keyTakeaways: [{title:"Architecture",desc:"Choose boundaries before APIs."},{title:"Integration",desc:"Combine state, routing, server data, tests, and UX states."},{title:"Judgment",desc:"Explain why an architecture is appropriate rather than merely possible."}], codePreview: `render → state → server state → routing → tests → production decision` },
-  "mental-models": { badge: "MODULE 01 • MENTAL MODELS", tagline: "Understand React before memorizing its hooks.", subtitle: "Rendering snapshots, state ownership, identity, purity, and event/effect boundaries.", whatIsIt: "The conceptual layer underneath React APIs.", whyLearnIt: "Most difficult React bugs are failures of prediction: stale snapshots, incorrect state ownership, identity mistakes, and effects used for ordinary data flow.", withoutThisReact: "Without these models, developers can memorize hooks yet still struggle to explain re-renders and state preservation.", keyTakeaways: [{title:"Render Snapshots",desc:"Each render calculates UI from a snapshot of inputs."},{title:"State Ownership",desc:"Put state at the lowest common owner that must coordinate it."},{title:"Boundaries",desc:"Choose render, event, Effect, or server-state boundaries before APIs."}], codePreview: `const visible = items.filter(item => item.active);` },
+  "mental-models": { badge: "MODULE 01 • MENTAL MODELS", tagline: "Learn to predict what React will do before you run it.", subtitle: "By the end of this module you can say what will appear on screen, and why, without guessing — which is what makes React bugs findable.", whatIsIt: "How React actually behaves underneath the hooks you have been using: what a render is, which values are recalculated versus remembered, which component should own a piece of data, and why React sometimes keeps state and sometimes throws it away.", whyLearnIt: "Most difficult React bugs are failures of prediction: stale snapshots, incorrect state ownership, identity mistakes, and effects used for ordinary data flow.", withoutThisReact: "Without these models, developers can memorize hooks yet still struggle to explain re-renders and state preservation.", keyTakeaways: [{title:"Render Snapshots",desc:"Each render calculates UI from a snapshot of inputs."},{title:"State Ownership",desc:"Put state at the lowest common owner that must coordinate it."},{title:"Boundaries",desc:"Choose render, event, Effect, or server-state boundaries before APIs."}], codePreview: `const visible = items.filter(item => item.active);` },
   "modern-react": { badge: "MODULE • REACT 19.2", tagline: "Understand modern React as architecture, not API trivia.", subtitle: "Effect Events, Activity, Compiler-aware optimization, and boundaries.", whatIsIt: "A focused update for the React 19.2 generation of APIs.", whyLearnIt: "Current React changes the trade-offs around Effects and memoization.", withoutThisReact: "Without it, learners can leave with a pre-19 mental model.", keyTakeaways: [{title:"Effect Events",desc:"Separate event-like logic from Effect synchronization."},{title:"Activity",desc:"Preserve hidden UI while deprioritizing hidden work."},{title:"Compiler",desc:"Understand automatic memoization without abandoning performance reasoning."}], codePreview: `const onConnected = useEffectEvent(() => showNotification(theme));` },
   "debugging": { badge: "MODULE • DEBUGGING", tagline: "Learn React by investigating broken React.", subtitle: "Diagnose renders, Effects, identity, Strict Mode, and accessibility failures.", whatIsIt: "A production-oriented debugging track based on intentionally broken applications.", whyLearnIt: "Professional React work is dominated by explaining unexpected behavior and choosing the correct abstraction.", withoutThisReact: "Without debugging practice, developers become dependent on recipes.", keyTakeaways: [{title:"Mechanism First",desc:"Explain the render/update chain before changing code."},{title:"Measure",desc:"Use DevTools and the Profiler instead of guessing."},{title:"Accessibility",desc:"Treat semantics, labels, focus, and errors as part of the component contract."}], codePreview: `render → state update → render → effect → synchronization` },
   "js-fundamentals": {
     badge: "MODULE 00 • PREREQUISITES",
-    tagline: "Master Modern JavaScript. The engine powering React.",
-    subtitle: "Sharpen your mental model of closures, destructuring, arrow functions, and array transformations before building components.",
-    whatIsIt: "A deep dive into the modern ES6+ JavaScript mechanics that React relies on daily: lexical scoping, arrow function closures, object/array destructuring, rest/spread operators, and immutable array transformations.",
+    tagline: "The JavaScript you will use on every page of React.",
+    subtitle: "By the end of this module you can read and write the handful of JavaScript features that React code uses constantly — so React itself is the only new thing you have to learn next.",
+    whatIsIt: "The parts of modern JavaScript that React leans on: how variables are scoped, the short arrow syntax for functions, pulling values out of objects and arrays, copying data instead of changing it, transforming lists, and waiting for things that take time.",
     whyLearnIt: "React is 100% pure JavaScript. Many of the bugs developers struggle with in React—stale closures, infinite loops, broken re-renders—turn out to be misunderstandings of plain JavaScript closures and reference equality, not React itself.",
     withoutThisReact: "Without modern JavaScript, React code would be bloated with prototype inheritance, manual `.bind(this)` boilerplate everywhere, and noisy imperative for-loops. ES6+ gives React its clean, expressive functional architecture.",
     keyTakeaways: [
@@ -34,9 +52,9 @@ const activeNames = users
 
   "fundamentals": {
     badge: "MODULE 01 • CORE ARCHITECTURE",
-    tagline: "Think in Declarative Trees. Make the browser reflect your state.",
-    subtitle: "Read the hierarchy, trace unidirectional data flow, and watch React compile JSX into lightning-fast React element trees.",
-    whatIsIt: "The foundational anatomy of React: JSX compilation into React element objects, pure functional components, unidirectional prop passing, and reactive local state managed through `useState`.",
+    tagline: "Write your first components, and make them respond to a click.",
+    subtitle: "By the end of this module you can build a screen out of reusable pieces, pass data into them, and change what they show when someone interacts.",
+    whatIsIt: "The four things every React screen is made of: markup written inside JavaScript (JSX), components that group it into reusable pieces, props that pass data into a component, and state that lets a component remember something that changes.",
     whyLearnIt: "Every single React application—from a humble counter to a massive enterprise dashboard—is built on components and state. Mastering this foundation teaches you how React schedules renders and builds predictable user interfaces.",
     withoutThisReact: "Without this module, React wouldn't exist! Without JSX and components, you'd be writing thousands of manual `document.createElement()` and `innerHTML` DOM mutations. Without `useState`, web interfaces would be completely static and unable to respond to user interactions.",
     keyTakeaways: [
@@ -339,24 +357,52 @@ const count = useStore(state => state.count);`
   },
 
   "advanced": {
-    badge: "MODULE 11 • MODERN REACT 19",
-    tagline: "Modern React 19 & Beyond. Actions, Suspense & Flight Stream RSCs.",
-    subtitle: "Master React 19 Actions API, concurrent transitions, optimistic UI updates, and React Server Components.",
-    whatIsIt: "The latest state-of-the-art React 19 paradigms: `useActionState` and `useFormStatus` for async form actions, `useOptimistic` for instantaneous UI updates, and React Server Components (RSC) streamed via the Flight protocol.",
-    whyLearnIt: "React 19 revolutionizes how web apps handle mutations and asynchronous state, eliminating manual `isPending` state booleans, error catches, and loading spinners in favor of built-in action transitions.",
-    withoutThisReact: "Without React 19's Action primitives, every button click handling a network request requires writing 4 manual state variables (`loading`, `error`, `data`, `pending`) and 20 lines of try/catch boilerplate!",
+    badge: "MODULE 11 • SUSPENSE & CONCURRENCY",
+    tagline: "Waiting, on purpose. Boundaries for loading and interruptible renders.",
+    subtitle: "Declare where loading UI lives with Suspense, ship less JavaScript with lazy, and keep the app responsive while a slow render is in flight.",
+    whatIsIt: "The two halves of React's answer to slowness: `<Suspense>` boundaries that own the loading UI for anything not ready yet, and the concurrent APIs (`useTransition`, `useDeferredValue`) that let React interrupt a slow render to handle a keystroke first.",
+    whyLearnIt: "An app is not slow because a render takes 80ms; it is slow because that 80ms blocks the character the user just typed. Suspense moves loading states out of components, and transitions decide which work is allowed to be interrupted.",
+    withoutThisReact: "Without Suspense every fetching component carries its own `if (isLoading)` branch, and without transitions a single expensive list re-render makes the input it filters feel broken.",
     keyTakeaways: [
       {
-        title: "Actions API",
-        desc: "Async transitions automatically manage pending states, error handling, and optimistic resets."
+        title: "Boundaries Own Loading",
+        desc: "A suspending component renders nothing; the nearest <Suspense> renders its fallback. Code and data suspend the same way."
       },
       {
-        title: "React Server Components (RSC)",
-        desc: "Server components execute exclusively on the backend, streaming compact JSON-like Flight data with 0kB client bundle impact."
+        title: "Urgent vs Transition",
+        desc: "startTransition marks an update as interruptible, so typing stays responsive while the expensive result catches up."
+      },
+      {
+        title: "Deferring a Value",
+        desc: "useDeferredValue lags one value behind on purpose, rendering the stale result until the fresh one is ready."
+      }
+    ],
+    codePreview: `<Suspense fallback={<Skeleton />}>
+  <Timeline />
+</Suspense>
+
+const deferredQuery = useDeferredValue(query);`
+  },
+
+  "react-server": {
+    badge: "MODULE 12 • SERVER COMPONENTS & ACTIONS",
+    tagline: "Move the work to the server. Then make the client feel instant.",
+    subtitle: "Where the server/client boundary falls, how form Actions replace four state variables, and how useOptimistic hides the round trip.",
+    whatIsIt: "React 19's mutation and server story: Server Components that run only on the backend, `useActionState`/`useFormStatus` for forms that submit through a function instead of an event handler, and `useOptimistic` for showing the result before the network confirms it.",
+    whyLearnIt: "Mutations are where hand-rolled React gets ugliest — `loading`, `error`, `data`, `pending` and a try/catch per button. Actions fold all four into the primitive, and the server boundary decides how much code the user downloads at all.",
+    withoutThisReact: "Without Actions every submit handler re-implements the same pending/error dance by hand. Without a server boundary, every formatting library and markdown parser ships to the browser whether the user needs it or not.",
+    keyTakeaways: [
+      {
+        title: "The Boundary Is a Decision",
+        desc: "Server Components have no state and no effects. 'use client' marks where interactivity — and the bundle — begins."
+      },
+      {
+        title: "Actions API",
+        desc: "An async action passed to <form action> gets pending state, error handling, and sequencing from React itself."
       },
       {
         title: "Optimistic UI",
-        desc: "Update the UI immediately before network confirmation, and gracefully rollback if the server action fails."
+        desc: "useOptimistic(state, updateFn) shows the expected result immediately and rolls back automatically if the action fails."
       }
     ],
     codePreview: `// React 19 Action with automatic pending state
@@ -366,6 +412,34 @@ const [state, formAction, isPending] = useActionState(
   },
   null
 );`
+  },
+
+  "ts-fundamentals": {
+    badge: "MODULE 17 • TYPESCRIPT FUNDAMENTALS",
+    tagline: "Learn the language before pointing it at React.",
+    subtitle: "Annotations and inference, unions and narrowing, object shapes, generics, and the strictness settings that make any of it worth running.",
+    whatIsIt: "TypeScript on its own terms: how a type gets attached to a value, how a union is narrowed down to one of its members, how an object's shape is described, what a type parameter is for, and what `strict` actually switches on.",
+    whyLearnIt: "The React TypeScript module that follows assumes all of this. Most people who find typed React frustrating are not struggling with React — they are meeting generics, unions and `unknown` for the first time inside a component, where three unfamiliar things happen at once.",
+    withoutThisReact: "Without the language underneath, typed React degrades into copying signatures that work and reaching for `any` when they do not, which removes the entire benefit while keeping the entire cost.",
+    keyTakeaways: [
+      {
+        title: "Annotate the Boundaries",
+        desc: "State the types that cross a boundary — parameters, exports, empty containers — and let inference handle everything else."
+      },
+      {
+        title: "Unions and Narrowing",
+        desc: "A literal union makes impossible states unrepresentable; a typeof, === or in check is what lets you use one member of it."
+      },
+      {
+        title: "unknown, not any",
+        desc: "`any` switches checking off for everything it touches. `unknown` forces the check at the boundary where it always belonged."
+      }
+    ],
+    codePreview: `type Status = 'idle' | 'loading' | 'success' | 'error';
+
+function first<T>(items: T[]): T | undefined {
+  return items[0];
+}`
   },
 
   "typescript": {
@@ -429,6 +503,19 @@ export function Button({ variant = 'primary', isLoading, children, ...rest }: Bu
 });`
   }
 };
+
+// Badge numbers were typed by hand and drifted out of step with the teaching
+// order: two modules both claimed "01", and the sequence a reader actually met
+// ran 00, 01, 01, 02, 05, 04, 06, 03 -- numbering that contradicted the order it
+// was numbering. The number is now derived from the module's real position in
+// the registry, so reordering index.js cannot leave a stale badge behind. Only
+// the label half ("CORE ARCHITECTURE") is authored below.
+for (const [index, moduleMeta] of curriculum.entries()) {
+  const overview = moduleOverviews[moduleMeta.id];
+  if (!overview) continue;
+  const label = (overview.badge || '').split('•').pop().trim() || moduleMeta.title.toUpperCase();
+  overview.badge = `MODULE ${String(index + 1).padStart(2, '0')} • ${label}`;
+}
 
 export function getModuleOverview(moduleId, moduleTitle) {
   if (moduleOverviews[moduleId]) {

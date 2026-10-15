@@ -30,6 +30,12 @@ const useUIStore = create(
       toggleUnlockAll: () => set((state) => ({ unlockAllLessons: !state.unlockAllLessons })),
       setUnlockAllLessons: (unlockAllLessons) => set({ unlockAllLessons }),
 
+      // 'en' | 'tr'. This key was already in the persist list below but was never
+      // defined, so it read as undefined and nothing could ever set it.
+      language: 'en',
+      setLanguage: (language) => set({ language: language === 'tr' ? 'tr' : 'en' }),
+      toggleLanguage: () => set((state) => ({ language: state.language === 'tr' ? 'en' : 'tr' })),
+
 
 
       // Zen Mode & Modal States

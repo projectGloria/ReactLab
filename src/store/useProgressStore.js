@@ -75,6 +75,19 @@ const useProgressStore = create(
         }),
       })),
 
+      // Capstones have no automated validator -- they are project briefs graded
+      // against a written rubric. Persisting the learner's own tick against each
+      // criterion is what turns that rubric from a paragraph they skim into a
+      // checklist they work through, and it survives closing the app.
+      toggleRubricCriterion: (lessonId, criterion) => set((state) => {
+        const checked = state.lessonState?.[lessonId]?.rubric || {};
+        return {
+          lessonState: mergeLessonState(state, lessonId, {
+            rubric: { ...checked, [criterion]: !checked[criterion] },
+          }),
+        };
+      }),
+
       recordLearningCheck: (lessonId, checkId, result = {}) => set((state) => {
         // Global calibration log (confidence vs. actual correctness) powers the
         // Review Lab calibration chart — kept separate from per-lesson learningChecks

@@ -554,6 +554,7 @@ ipcMain.handle('mentor:ask', async (event, payload = {}) => {
     question,
     context: payload.context,
     budget: provider === 'ollama' ? LOCAL_CONTEXT_CHARS : MAX_CONTEXT_CHARS,
+    language: payload.language === 'tr' ? 'tr' : 'en',
   });
   const senderWebContents = event.sender;
   const onChunk = (chunk) => {

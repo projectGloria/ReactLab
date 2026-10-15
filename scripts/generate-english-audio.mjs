@@ -22,6 +22,12 @@ export function sanitizeForTTS(text) {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/—/g, ', ')
     .replace(/–/g, ', ')
+    // The request is sent as SSML, so a bare & is a malformed entity reference
+    // and the server closes the stream mid-synthesis — reported as "Stream
+    // closed before the synthesis completed", which reads like a network fault
+    // rather than a text problem. "and" is also what a narrator would say.
+    .replace(/\s*&\s*/g, ' and ')
+    .replace(/[<>]/g, ' ')
     .replace(/\n+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

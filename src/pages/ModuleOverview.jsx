@@ -78,16 +78,20 @@ export default function ModuleOverview() {
   const moduleData = useMemo(() => {
     const mod = curriculum.find(m => m.id === moduleId);
     if (!mod) return null;
-    const moduleIdx = curriculum.findIndex(m => m.id === moduleId);
+    // 1-based, like every other place a module number is shown. The raw
+    // findIndex was rendered directly for a long time, so this page said
+    // "Module 14" for the module the sidebar and the overview badge both
+    // called 15 -- for every module in the course, not just one.
+    const moduleNumber = curriculum.findIndex(m => m.id === moduleId) + 1;
     const overview = getModuleOverview(moduleId, mod.title);
-    return { ...mod, moduleIdx, overview };
+    return { ...mod, moduleNumber, overview };
   }, [moduleId]);
 
   if (!moduleData) {
     return <NotFound />;
   }
 
-  const { lessons, moduleIdx, overview, title: modTitle } = moduleData;
+  const { lessons, moduleNumber, overview, title: modTitle } = moduleData;
 
   const isModUnlocked = isModuleUnlocked(moduleId, completedLessons, unlockAllLessons);
   const readiness = useMemo(() => getModuleReadiness(moduleId, lessonState || {}), [moduleId, lessonState]);
@@ -167,7 +171,7 @@ export default function ModuleOverview() {
                 borderRadius: '6px',
                 border: '1px solid rgba(217, 119, 87, 0.25)',
               }}>
-                Module {moduleIdx}
+                Module {moduleNumber}
               </span>
               <span style={{ fontSize: '0.8rem', color: '#78716c' }}>
                 • {lessons.length} Interactive Lessons
@@ -235,7 +239,7 @@ export default function ModuleOverview() {
                   }}
                 >
                   <Play size={16} fill="currentColor" />
-                  {isStarted ? `Resume Module ${moduleIdx}` : `Trace Module ${moduleIdx}`}
+                  {isStarted ? `Resume Module ${moduleNumber}` : `Trace Module ${moduleNumber}`}
                   <ArrowRight size={16} />
                 </motion.button>
               ) : (

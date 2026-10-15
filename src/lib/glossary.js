@@ -122,6 +122,15 @@ function SubmitButton({ isActive, isLoading }) {
 }`,
     whyItMatters: 'React is declarative: you change state, and React handles mutating the underlying browser DOM elements automatically.',
   },
+  'unidirectional data flow': {
+    aliases: ['unidirectional', 'one-way data flow'],
+    term: 'Unidirectional Data Flow',
+    category: 'Architecture',
+    definition: 'Data moves in one direction only: a parent passes values down to its children through props. A child cannot reach up and change its parent\'s data — it can only call a function the parent handed it.',
+    mentalModel: 'Water flowing down a set of steps. It can only go downhill, so to find out where a puddle came from you walk upwards — there is exactly one path to check.',
+    code: "function Parent() {\n  const [name, setName] = useState('Ada');\n  // Data goes down as a prop; a request to change it goes down as a function.\n  return <Child name={name} onRename={setName} />;\n}\n\nfunction Child({ name, onRename }) {\n  // The child cannot assign to name. It asks the owner to change it.\n  return <button onClick={() => onRename('Grace')}>{name}</button>;\n}",
+    whyItMatters: 'When a value on screen is wrong, there is only one direction to search: upward, toward whoever owns it. This is what makes React bugs traceable rather than a hunt through everything that might have written to a shared object.',
+  },
   'referential equality': {
     aliases: ['reference equality', 'object.is'],
     term: 'Referential Equality',

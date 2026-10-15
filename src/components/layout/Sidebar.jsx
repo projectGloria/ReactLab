@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { CheckCircle, Circle, Atom, Lock, BrainCircuit, Volume2, VolumeX, BookOpen, Menu, Check, RotateCcw } from 'lucide-react';
 import useProgressStore from '../../store/useProgressStore';
 import useUIStore from '../../store/useUIStore';
-import curriculum, { TOTAL_LESSONS } from '../../curriculum/index';
+import curriculumEn, { TOTAL_LESSONS } from '../../curriculum/index';
+import { getLocalizedCurriculum } from '../../curriculum/localizedCurriculum.js';
+import { translator } from '../../lib/uiStrings.js';
 import { isLessonUnlocked, isModuleUnlocked } from '../../lib/progression';
 import audioManifest from '../../curriculum/audioManifest.json';
 
 // Whether narration has been generated for this install at all. With no audio
-// anywhere, a "narration missing" badge on all 84 lessons is noise about a
+// anywhere, a "narration missing" badge on every lesson is noise about a
 // feature that simply is not set up -- the badge only says something useful once
 // some lessons have audio and others do not.
 const HAS_ANY_NARRATION = Object.values(audioManifest).some((c) => c?.present > 0);
@@ -34,6 +36,10 @@ export default function Sidebar() {
   const toggleCompleted = useProgressStore((state) => state.toggleCompleted);
   const unlockAllLessons = useUIStore((state) => state.unlockAllLessons);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const language = useUIStore((state) => state.language);
+  // Ids and order are untouched by this; only the labels change.
+  const curriculum = useMemo(() => getLocalizedCurriculum(curriculumEn, language), [language]);
+  const t = useMemo(() => translator(language), [language]);
 
   // Context Menu State for Right Click
   const [contextMenu, setContextMenu] = useState(null); // { x, y, lesson }
@@ -103,7 +109,7 @@ export default function Sidebar() {
                   style={{ width: `${Math.min(100, Math.round((completedLessons.length / TOTAL_LESSONS) * 100))}%` }}
                 />
               </div>
-              <span style={{ whiteSpace: 'nowrap' }}>{completedLessons.length}/{TOTAL_LESSONS} complete</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{t('progress.complete', { done: completedLessons.length, total: TOTAL_LESSONS })}</span>
             </div>
           </div>
         </div>
@@ -148,14 +154,14 @@ export default function Sidebar() {
           className={({ isActive }) => `sidebar-review-link${isActive ? ' is-active' : ''}`}
         >
           <BrainCircuit size={17} />
-          <span>Review Lab</span>
+          <span>{t('nav.reviewLab')}</span>
         </NavLink>
         <NavLink
           to="/glossary"
           className={({ isActive }) => `sidebar-review-link${isActive ? ' is-active' : ''}`}
         >
           <BookOpen size={17} />
-          <span>Glossary Codex</span>
+          <span>{t('nav.glossary')}</span>
         </NavLink>
       </div>
 
@@ -163,6 +169,10 @@ export default function Sidebar() {
       <div className="auto-hide-scrollbar sidebar-modules">
         {curriculum.map((module, mIdx) => {
           const isModUnlocked = isModuleUnlocked(module.id, completedLessons, unlockAllLessons);
+          // 1-based, matching the badge on the module overview page. This counted
+          // from 0 here and from 1 there, so the first module was both "Module 0"
+          // and "MODULE 01" depending on which screen you were looking at.
+          const moduleNumber = String(mIdx + 1).padStart(2, '0');
 
           return (
             <div key={module.id} className="sidebar-module">
@@ -171,11 +181,11 @@ export default function Sidebar() {
                 className={({ isActive }) =>
                   `sidebar-module-link${isActive ? ' is-active' : isModUnlocked ? '' : ' is-locked'}`
                 }
-                title={isModUnlocked ? `View Module ${mIdx} Overview` : `Module ${mIdx} (Locked - Click to view overview)`}
+                title={t(isModUnlocked ? 'nav.moduleOverview' : 'nav.moduleLocked', { n: moduleNumber })}
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                  <span className="sidebar-module-prefix">{`Module ${mIdx}:`}</span>
+                  <span className="sidebar-module-prefix">{t('nav.modulePrefix', { n: moduleNumber })}</span>
                   <span className="sidebar-module-name">{module.title}</span>
                 </div>
                 {!isModUnlocked && <Lock size={12} color="#78716c" />}

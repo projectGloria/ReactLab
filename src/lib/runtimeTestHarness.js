@@ -53,7 +53,19 @@ export async function runRuntimeAssertion(iframeWindow, testType, options = {}) 
         const input = doc.querySelector(inputSelector || 'input');
         if (!input) return { ok: false, message: `Input element not found.` };
 
-        input.value = inputValue;
+        // React installs its own `value` setter on the input prototype and uses
+        // it to detect changes. Assigning `input.value = x` directly bypasses
+        // that tracker, so React sees no change and onChange never fires --
+        // which would make this assertion fail against perfectly correct
+        // controlled-input code. Go through the native setter instead, which is
+        // what React Testing Library and the browser devtools do.
+        const proto = iframeWindow.HTMLTextAreaElement && input instanceof iframeWindow.HTMLTextAreaElement
+          ? iframeWindow.HTMLTextAreaElement.prototype
+          : iframeWindow.HTMLInputElement.prototype;
+        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+        if (nativeSetter) nativeSetter.call(input, inputValue);
+        else input.value = inputValue;
+
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         await new Promise(r => setTimeout(r, 50));

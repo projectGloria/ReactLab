@@ -9,6 +9,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />}>
+          <Route index element={<p>Select a tab from the sidebar.</p>} />
           <Route path="profile" element={<Profile />} />
           <Route path="billing" element={<Billing />} />
         </Route>

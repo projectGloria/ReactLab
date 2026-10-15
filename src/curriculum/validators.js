@@ -1,4 +1,4 @@
-import { parseAST, hasHookCall, hasHookCallWithDeps, hasJSXAttribute, findNode, hasStableKeyInMap } from './ast.js';
+﻿import { parseAST, hasHookCall, hasHookCallWithDeps, hasJSXAttribute, findNode, hasStableKeyInMap } from './ast.js';
 
 const clean = (str) => {
   if (typeof str !== 'string') return '';
@@ -40,8 +40,46 @@ const effectRanges = (ast) => collect(ast, {
 
 const withinAny = (node, ranges) => ranges.some(([start, end]) => node.start >= start && node.end <= end);
 
+// ChallengeModal normalises a lesson's `/App.jsx` to the runtime entry path
+// (`/App.js`, or `/App.tsx` for the TypeScript module) before handing files to
+// Sandpack, so a validator that looks up '/App.jsx' finds nothing and silently
+// falls back to `code`. That fallback happened to be the same file, which is why
+// nothing broke -- but it meant the lookup was decoration. Resolve whichever
+// spelling is actually present instead.
+const appCode = (files, code) => {
+  for (const path of ['/App.js', '/App.jsx', '/App.tsx']) {
+    const found = files?.[path]?.code;
+    if (typeof found === 'string') return found;
+  }
+  return code || '';
+};
+
 export const validators = {
+  // The first two lessons run before JSX exists for the reader, so their rules
+  // read plain JavaScript rather than markup.
+  'what-is-react': [
+    { message: 'Keep updating the screen after incrementing', test: (code) => /count=count\+1;render\(\)/.test(clean(code)) },
+    { message: 'Call render() after resetting count so the label follows the data', test: (code) => /count=0;render\(\)/.test(clean(code)) }
+  ],
+  'modules-and-imports': [
+    { message: 'Export CURRENCY by name so other files can import it', test: (code) => /exportconstCURRENCY=/.test(clean(code)) },
+    { message: 'Give the file a default export so the entry point can render App', test: (code) => /exportdefaultfunctionApp\(/.test(clean(code)) },
+    { message: 'Leave formatPrice private to this file', test: (code) => !/exportfunctionformatPrice|exportconstformatPrice/.test(clean(code)) }
+  ],
   'jsx-intro': [
+    // Rule 1 accepts a Fragment *or* a single wrapping element -- both are
+    // legitimate answers to "one root", and the lesson only recommends the
+    // Fragment because it adds no DOM node. A starter returning three adjacent
+    // elements does not parse at all, so parseAST returns null and this fails.
+    { message: 'Must return a single root element (a Fragment <>...</> or one wrapping element)', test: code => {
+      const ast = parseAST(code);
+      return findNode(ast, {
+        ReturnStatement(node) {
+          const arg = node.argument;
+          return arg?.type === 'JSXElement' || arg?.type === 'JSXFragment';
+        }
+      });
+    } },
     { message: 'Must use className for CSS classes', test: code => { const ast=parseAST(code); return hasJSXAttribute(ast,null,'className') && !hasJSXAttribute(ast,null,'class'); } },
     { message: 'Must explicitly close the img JSX element', test: code => /<img[\s\S]*\/>/.test(code) }
   ],
@@ -55,10 +93,18 @@ export const validators = {
     { message: 'Must render the dynamic role prop', test: (code) => /\{role\}/.test(clean(code)) },
     { message: 'Must pass name and role to UserProfile instances', test: (code) => /<UserProfile[^>]*name=[^>]*role=|<UserProfile[^>]*role=[^>]*name=/.test(clean(code)) }
   ],
-  'state': [
-    { message: 'Must call useState hook', test: (code) => hasHookCall(parseAST(code) || {}, 'useState') || /useState/.test(clean(code)) },
-    { message: 'Must attach onClick to the button', test: (code) => /onClick=\{/.test(clean(code)) }
-  ],
+  // Syntax rules say the right words are present; the runtime assertion says the
+  // component actually behaves. Both matter, and only the second one notices a
+  // counter that is wired up but never increments.
+  'state': {
+    rules: [
+      { message: 'Must call useState hook', test: (code) => hasHookCall(parseAST(code) || {}, 'useState') || /useState/.test(clean(code)) },
+      { message: 'Must attach onClick to the button', test: (code) => /onClick=\{/.test(clean(code)) }
+    ],
+    runtimeTests: [
+      { type: 'button-click-effect', options: { buttonText: 'Increment', targetSelector: 'h2', expectedNewText: 'Counter: 1' } }
+    ]
+  },
   'events': [
     { message: 'Must create handleSubmit function', test: (code) => /functionhandleSubmit/.test(clean(code)) || /consthandleSubmit=/.test(clean(code)) },
     { message: 'Must call e.preventDefault()', test: (code) => /preventDefault\(\)/.test(clean(code)) },
@@ -114,6 +160,18 @@ export const validators = {
       }
       return /useContext\(ThemeContext\)/.test(clean(code));
     }}
+  ],
+  'context-provider-pattern': [
+    { message: 'Define a UserProvider component that renders the context around its children', test: (code) => /functionUserProvider\(\{children\}\)/.test(clean(code)) || /constUserProvider=\(\{children\}\)=>/.test(clean(code)) },
+    { message: 'Memoize the context value so consumers do not re-render on every provider render', test: (code) => /useMemo\(\(\)=>\(\{user,setUser\}\),\[user\]\)/.test(clean(code)) },
+    { message: 'Define a useUser hook that reads the context', test: (code) => /functionuseUser\(\)/.test(clean(code)) && /useContext\(UserContext\)/.test(clean(code)) },
+    { message: 'useUser must throw when the provider is missing', test: (code) => /thrownewError\(/.test(clean(code)) }
+  ],
+  'context-with-reducer': [
+    { message: 'Declare a second context for dispatch', test: (code) => /constCountDispatchContext=createContext\(/.test(clean(code)) },
+    { message: 'Provide the count and dispatch through their own contexts', test: (code) => /<CountContextvalue=\{count\}>/.test(clean(code)) && /<CountDispatchContextvalue=\{dispatch\}>/.test(clean(code)) },
+    { message: 'Display must read only the count context', test: (code) => /constcount=useContext\(CountContext\)/.test(clean(code)) },
+    { message: 'Controls must read only the dispatch context', test: (code) => /constdispatch=useContext\(CountDispatchContext\)/.test(clean(code)) }
   ],
   'composition': [
     { message: 'Dialog must accept children prop', test: (code) => /(functionDialog\(\{.*children.*\}\)|constDialog=\(\{.*children.*\}\)=>)/.test(clean(code)) },
@@ -195,12 +253,12 @@ export const validators = {
       return /\{fishes\}/.test(clean(displayCode));
     } },
     { message: 'Must extract addFish action in Controls', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      return /(?:useZooStore|useStore)\(\(?state\)?=>state\.addFish\)/.test(clean(appCode));
+      const entry = appCode(files, code);
+      return /(?:useZooStore|useStore)\(\(?state\)?=>state\.addFish\)/.test(clean(entry));
     } },
     { message: 'Must attach addFish to the onClick of the button', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      return /<button[^>]*onClick=\{.*?addFish.*?\}[^>]*>addfish/i.test(clean(appCode));
+      const entry = appCode(files, code);
+      return /<button[^>]*onClick=\{.*?addFish.*?\}[^>]*>addfish/i.test(clean(entry));
     } }
   ],
   'react-query': [
@@ -221,6 +279,12 @@ export const validators = {
     { message: 'Must call useTransition()', test: (code) => /useTransition\(\)/.test(clean(code)) },
     { message: 'Must wrap setFilter inside startTransition', test: (code) => /startTransition\(\(\)=>\{?setFilter\(/.test(clean(code)) },
     { message: 'Must conditionally render using isPending', test: (code) => /isPending&&</.test(clean(code)) }
+  ],
+  'use-deferred-value': [
+    { message: 'Must create a deferred copy: const deferredQuery = useDeferredValue(query)', test: (code) => /constdeferredQuery=useDeferredValue\(query\)/.test(clean(code)) },
+    { message: 'Must derive isStale by comparing query with deferredQuery', test: (code) => /constisStale=query!==deferredQuery/.test(clean(code)) },
+    { message: 'Must pass deferredQuery (not query) to ResultList', test: (code) => /<ResultList[^>]*query=\{deferredQuery\}/.test(clean(code)) },
+    { message: 'Must dim the wrapper while isStale is true', test: (code) => /opacity:isStale\?/.test(clean(code)) }
   ],
   'server-components': [
     { message: 'Must add \'use client\' directive at the very top of the file', test: (code) => /^['"]useclient['"];?/.test(clean(code)) }
@@ -255,10 +319,15 @@ export const validators = {
     { message: 'Must conditionally render the error span', test: (code) => /[a-zA-Z0-9_]*[Ee]rror[s]?(&&|\?)/.test(clean(code)) },
     { message: 'Must disable the submit button', test: (code) => /disabled=\{/.test(clean(code)) }
   ],
-  'use-reducer': [
-    { message: 'Must call useReducer with reducer and initial state', test: (code) => /useReducer\(reducer,/.test(clean(code)) },
-    { message: 'Must dispatch INCREMENT action on button click', test: (code) => /dispatch\(\{type:['"]INCREMENT['"]\}\)/.test(clean(code)) }
-  ],
+  'use-reducer': {
+    rules: [
+      { message: 'Must call useReducer with reducer and initial state', test: (code) => /useReducer\(reducer,/.test(clean(code)) },
+      { message: 'Must dispatch INCREMENT action on button click', test: (code) => /dispatch\(\{type:['"]INCREMENT['"]\}\)/.test(clean(code)) }
+    ],
+    runtimeTests: [
+      { type: 'button-click-effect', options: { buttonText: '+', targetSelector: 'h2', expectedNewText: 'Count: 1' } }
+    ]
+  },
   'use-id': [
     { message: 'Must call useId()', test: (code) => /useId\(\)/.test(clean(code)) },
     { message: 'Must assign the generated id to the input element', test: (code) => /<input[^>]*id=\{/.test(clean(code)) },
@@ -284,13 +353,13 @@ export const validators = {
   ],
   'router-loaders': [
     { message: 'Must define an async profileLoader that fetches the user', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      const cleaned = clean(appCode);
+      const entry = appCode(files, code);
+      const cleaned = clean(entry);
       return /asyncfunctionprofileLoader\(\)/.test(cleaned) && /fetch\('https:\/\/jsonplaceholder\.typicode\.com\/users\/1'\)/.test(cleaned);
     }},
     { message: 'Must attach the loader to the route', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      return /loader:profileLoader/.test(clean(appCode));
+      const entry = appCode(files, code);
+      return /loader:profileLoader/.test(clean(entry));
     }},
     { message: 'Profile must read data with useLoaderData instead of useEffect', test: (code, files) => {
       const profileCode = files?.['/Profile.jsx']?.code || code;
@@ -298,8 +367,51 @@ export const validators = {
       return /useLoaderData\(\)/.test(cleaned) && !/useEffect/.test(cleaned);
     }}
   ],
-  'reconciliation-rules': [
-    { message: 'Must use a key prop to force reset', test: (code) => /key=\{selectedUser\}/.test(clean(code)) }
+  // Observation-only, like `reconciliation`: the skill is reading a flamegraph,
+  // which no regex can grade. The rule keeps the instrumentation in place so
+  // there is something to observe.
+  'profiling-renders': {
+    requiresObservation: true,
+    rules: [
+      { message: 'Keep the render markers so the Profiler has something to attribute', test: (code) => /console\.log\('render:/.test(code) }
+    ]
+  },
+  'ts-annotations': [
+    { message: 'Must annotate labels as string[] — an empty array literal infers never[]', test: (code) => /constlabels:string\[\]=\[\]/.test(clean(code)) },
+    { message: 'Must annotate both parameters of format: price is a number, label is a string', test: (code) => /functionformat\(price:number,label:string\)/.test(clean(code)) },
+    { message: 'Must annotate the return type of format as string', test: (code) => /functionformat\([^)]*\):string\{/.test(clean(code)) },
+    { message: 'Leave useState(0) to infer — an explicit type argument only repeats it', test: (code) => /useState\(0\)/.test(clean(code)) && !/useState<[^>]+>\(0\)/.test(clean(code)) }
+  ],
+  'ts-narrowing': [
+    { message: 'Status must be a union of the four literal strings, not string', test: (code) => {
+      const match = clean(code).match(/typeStatus=([^;]+);/);
+      if (!match) return false;
+      return ['idle', 'loading', 'success', 'error'].every((s) => match[1].includes(`'${s}'`)) && !/\bstring\b/.test(match[1]);
+    } },
+    { message: 'Must narrow with typeof before calling toUpperCase', test: (code) => /if\(typeofvalue==='string'\)/.test(clean(code)) },
+    { message: 'Must handle the number branch with toFixed', test: (code) => /value\.toFixed\(/.test(clean(code)) },
+    { message: 'Must pin the state to Status: useState<Status>(\'idle\')', test: (code) => /useState<Status>\('idle'\)/.test(clean(code)) }
+  ],
+  'ts-object-types': [
+    { message: 'Must declare a Contact object type', test: (code) => /interfaceContact\{/.test(clean(code)) || /typeContact=\{/.test(clean(code)) },
+    { message: 'Contact.id must be readonly', test: (code) => /readonlyid:number/.test(clean(code)) },
+    { message: 'Contact.phone must be optional', test: (code) => /phone\?:string/.test(clean(code)) },
+    { message: 'Must annotate the contacts array as Contact[]', test: (code) => /constcontacts:Contact\[\]=/.test(clean(code)) },
+    { message: 'Must type the selection state as Contact | null', test: (code) => /useState<Contact\|null>\(null\)/.test(clean(code)) }
+  ],
+  'ts-generics': [
+    { message: 'last must take a type parameter and return T | undefined', test: (code) => /functionlast<T>\(items:T\[\]\):T\|undefined/.test(clean(code)) },
+    { message: 'longest must take a type parameter', test: (code) => /functionlongest<T/.test(clean(code)) },
+    { message: 'longest\'s type parameter must be constrained with extends', test: (code) => /functionlongest<Textends/.test(clean(code)) },
+    { message: 'Both parameters and the return of longest must be T, so the caller keeps its type', test: (code) => /functionlongest<T[^>]*>\(a:T,b:T\):T/.test(clean(code)) },
+    { message: 'No `any` should be left in the file', test: (code) => !/:any/.test(clean(code)) }
+  ],
+  'ts-strictness': [
+    { message: 'stored must be annotated unknown, not any', test: (code) => /conststored:unknown=/.test(clean(code)) },
+    { message: 'Must declare a type guard: isSettings(value: unknown): value is Settings', test: (code) => /functionisSettings\(value:unknown\):valueisSettings/.test(clean(code)) },
+    { message: 'The guard must reject null — typeof null is "object"', test: (code) => /value!==null/.test(clean(code)) },
+    { message: 'Must narrow stored through the guard before reading it', test: (code) => /isSettings\(stored\)/.test(clean(code)) },
+    { message: 'No `any` should be left in the file', test: (code) => !/:any/.test(clean(code)) }
   ],
   'ts-props-hooks': [
     { message: 'Must define a Props type or interface', test: (code) => /typeUserProps=|interfaceUserProps/.test(clean(code)) },
@@ -314,16 +426,16 @@ export const validators = {
   ],
   'testing-error-boundaries': [
     { message: 'Must import ErrorBoundary from react-error-boundary', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      return /ErrorBoundary\}from['"]react-error-boundary['"]/.test(clean(appCode));
+      const entry = appCode(files, code);
+      return /ErrorBoundary\}from['"]react-error-boundary['"]/.test(clean(entry));
     }},
     { message: 'Must wrap BuggyComponent in ErrorBoundary with a fallback', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      return /<ErrorBoundary[^>]*fallback=\{.*?\}[^>]*>[\s\S]*?<BuggyComponent\/?>[\s\S]*?<\/ErrorBoundary>/.test(clean(appCode));
+      const entry = appCode(files, code);
+      return /<ErrorBoundary[^>]*fallback=\{.*?\}[^>]*>[\s\S]*?<BuggyComponent\/?>[\s\S]*?<\/ErrorBoundary>/.test(clean(entry));
     }},
     { message: 'SafeWidget text must stay outside the ErrorBoundary', test: (code, files) => {
-      const appCode = files?.['/App.jsx']?.code || code;
-      const cleaned = clean(appCode);
+      const entry = appCode(files, code);
+      const cleaned = clean(entry);
       const closeIdx = cleaned.indexOf('</ErrorBoundary>');
       return closeIdx !== -1 && cleaned.indexOf('SafeWidgetstillhere') > closeIdx;
     }}
@@ -340,7 +452,9 @@ export const validators = {
   ],
   'js-arrow-functions': [
     { message: 'Define formatName as an arrow function', test: (code) => /constformatName=.*=>/.test(clean(code)) },
-    { message: 'Use an arrow function for the click handler', test: (code) => /onClick=\{\(\)=>/.test(clean(code)) }
+    // This module runs before JSX is introduced, so the second rule reads a
+    // plain helper rather than an onClick attribute the reader has not met yet.
+    { message: 'Define shout as an arrow function too', test: (code) => /constshout=\(?text\)?=>/.test(clean(code)) }
   ],
   'js-template-literals': [
     { message: 'Build the message with a template literal', test: (code) => {
@@ -386,11 +500,21 @@ export const validators = {
     { message: 'Filter to active users before rendering', test: (code) => /\.filter\([^)]*=>[^)]*\.active\)/.test(clean(code)) },
     { message: 'Map users to list items', test: (code) => /\.map\([^)]*=>/.test(clean(code)) }
   ],
+  // One rule ("use a ternary somewhere") used to pass while half the challenge
+  // was still undone: the starter could keep `let tone` and its `if/else` and
+  // still be graded correct. The challenge asks for two ternaries and no `let`.
   'js-ternary': [
-    { message: 'Render the status with a ternary expression', test: (code) => /isOnline\?[^:]+:/.test(clean(code)) }
+    { message: 'Decide `text` with a ternary: const text = isOnline ? ... : ...', test: (code) => /consttext=isOnline\?[^:]+:/.test(clean(code)) },
+    { message: 'Decide `tone` with a ternary: const tone = isOnline ? ... : ...', test: (code) => /consttone=isOnline\?[^:]+:/.test(clean(code)) },
+    { message: 'Remove the `let` declarations — nothing is reassigned any more', test: (code) => !/\blet\s/.test(code) },
+    { message: 'Remove the if/else block the ternaries replace', test: (code) => !/\bif\s*\(/.test(code) }
   ],
   'use-optimistic': [
-    { message: 'Import and call useOptimistic', test: (code) => /useOptimistic/.test(clean(code)) && /useOptimistic\(todos\)/.test(clean(code)) },
+    // The documented signature is useOptimistic(state, updateFn). An earlier
+    // version of this rule required the one-argument form, which the lesson
+    // never teaches -- following the lesson failed the check.
+    { message: 'Call useOptimistic with the current todos and an update function', test: (code) => /useOptimistic\(todos,/.test(clean(code)) },
+    { message: 'The update function must return a new list with the matching todo toggled', test: (code) => /\{\.\.\.t,done:!t\.done\}/.test(clean(code)) },
     { message: 'Render the optimistic todo list', test: (code) => /optimisticTodos\.map/.test(clean(code)) }
   ],
   'use-layout-effect': [
@@ -407,7 +531,8 @@ export const validators = {
   ],
   'typescript-patterns': [
     { message: 'Define a generic List<T> component', test: (code) => /functionList<T>/.test(clean(code)) },
-    { message: 'Type items as T[] and renderItem with T', test: (code) => /items:T\[\]/.test(clean(code)) && /renderItem:\(item:T\)=>/.test(clean(code)) }
+    { message: 'Type items as T[], and both getKey and renderItem in terms of T', test: (code) => /items:T\[\]/.test(clean(code)) && /getKey:\(item:T\)=>/.test(clean(code)) && /renderItem:\(item:T\)=>/.test(clean(code)) },
+    { message: 'Key each <li> from getKey rather than the array index', test: (code) => /key=\{getKey\(item\)\}/.test(clean(code)) }
   ],
   'js-promises': [
     { message: 'Must use async/await', test: (code) => (/asyncfunction/.test(clean(code)) || /=async\(/.test(clean(code))) && /await/.test(clean(code)) }
@@ -418,11 +543,18 @@ export const validators = {
     { message: 'Must make Button component generic', test: (code) => /functionButton<[a-zA-Z]+extendsReact\.ElementType=?'button'?>/.test(clean(code)) },
     { message: 'Must pass as="a" to the Link Button', test: (code) => /<Button[^>]*as=['"]a['"][^>]*>LinkButton/.test(clean(code)) }
   ],
-  'form-controls': [
-    { message: 'Must bind select value to role state and handle onChange', test: (code) => (/<select[^>]*value=\{role\}/.test(clean(code)) && /<select[^>]*onChange=\{/.test(clean(code))) || (/value=\{role\}/.test(clean(code)) && /setRole\(e\.target\.value\)/.test(clean(code))) },
-    { message: 'Must bind checkbox checked prop to agree state using e.target.checked', test: (code) => /checked=\{agree\}/.test(clean(code)) && /e\.target\.checked/.test(clean(code)) },
-    { message: 'Must disable submit button when not agreed', test: (code) => /disabled=\{!agree\}/.test(clean(code)) || /disabled=\{agree===false\}/.test(clean(code)) }
-  ],
+  'form-controls': {
+    rules: [
+      { message: 'Must bind select value to role state and handle onChange', test: (code) => (/<select[^>]*value=\{role\}/.test(clean(code)) && /<select[^>]*onChange=\{/.test(clean(code))) || (/value=\{role\}/.test(clean(code)) && /setRole\(e\.target\.value\)/.test(clean(code))) },
+      { message: 'Must bind checkbox checked prop to agree state using e.target.checked', test: (code) => /checked=\{agree\}/.test(clean(code)) && /e\.target\.checked/.test(clean(code)) },
+      { message: 'Must disable submit button when not agreed', test: (code) => /disabled=\{!agree\}/.test(clean(code)) || /disabled=\{agree===false\}/.test(clean(code)) }
+    ],
+    runtimeTests: [
+      // `agree` starts false, so the rendered button must actually be disabled --
+      // not merely have the word `disabled` somewhere in the source.
+      { type: 'element-exists', options: { selector: 'button[disabled]' } }
+    ]
+  },
   'per-field-validation': [
     { message: 'Must track touched state for inputs onBlur', test: (code) => (/onBlur=\{.*setTouched/.test(clean(code)) || /onBlur=\{handleBlur\}/.test(clean(code)) || /onBlur=\{\(\)=>handleBlur\(/.test(clean(code))) && /handleBlur\(['"]password['"]\)/.test(clean(code)) },
     { message: 'Must compute validation error messages', test: (code) => /errors\.email/.test(clean(code)) && /errors\.password/.test(clean(code)) },
@@ -472,9 +604,16 @@ export const validators = {
       return /HttpResponse\.json\(/.test(cleaned) && /total:49\.99/.test(cleaned) && /count:2/.test(cleaned);
     }}
   ],
-  'rendering-model': [
-    { message: 'Use functional state updaters for the three dependent increments', test: code => (code.match(/setCount\s*\(\s*\w+\s*=>/g) || []).length >= 3 }
-  ],
+  // The whole lesson is "three increments produce 3, not 1", which a regex can
+  // only approximate. The runtime assertion checks the actual number.
+  'rendering-model': {
+    rules: [
+      { message: 'Use functional state updaters for the three dependent increments', test: code => (code.match(/setCount\s*\(\s*\w+\s*=>/g) || []).length >= 3 }
+    ],
+    runtimeTests: [
+      { type: 'button-click-effect', options: { buttonText: 'Count', targetSelector: 'button', expectedNewText: 'Count: 3' } }
+    ]
+  },
   'state-or-derived': [
     { message: 'Derive visibleCount instead of storing redundant state', test: code => /const\s+visibleCount\s*=/.test(code) && !/useState\s*\(\s*1\s*\)/.test(code) }
   ],
@@ -501,10 +640,23 @@ export const validators = {
     { message: 'Derive double during render', test: code => /const\s+double\s*=\s*count\s*\*\s*2/.test(code) },
     { message: 'Remove redundant setDouble state', test: code => !/setDouble/.test(code) }
   ],
-  'debug-identity': [
-    { message: 'Use roomId as the synchronization dependency', test: code => /\[roomId\]/.test(code) },
-    { message: 'Create options inside the Effect', test: code => /useEffect[\s\S]*const options\s*=/.test(code) }
+  'keyboard-and-focus': [
+    { message: 'Close the dialog when Escape is pressed', test: (code) => /e\.key==='Escape'/.test(clean(code)) || /event\.key==='Escape'/.test(clean(code)) },
+    { message: 'Move focus into the dialog when it opens', test: (code) => /\.current\?\.focus\(\)/.test(clean(code)) || /\.current\.focus\(\)/.test(clean(code)) },
+    { message: 'Return focus to the trigger when the dialog closes', test: (code) => /triggerRef/.test(clean(code)) },
+    { message: 'Give the dialog a dialog role and modal semantics', test: (code) => /role="dialog"/.test(clean(code)) && /aria-modal/.test(clean(code)) }
   ],
+  // Throws on purpose so the boundary has something to catch, exactly like the
+  // error-boundaries lesson -- so it needs the same opt-out.
+  'production-build': {
+    ignoreRuntimeErrors: true,
+    rules: [
+      { message: 'Guard the debug logging so the bundler can drop it', test: (code) => /if\(IS_DEV\)console\.log/.test(clean(code)) },
+      { message: 'Report the caught error instead of swallowing it', test: (code) => /catch\(error\)\{reportError\(error\)/.test(clean(code)) },
+      { message: 'Wrap the risky section in an ErrorBoundary with a fallback', test: (code) => /<ErrorBoundary[^>]*fallback=\{/.test(clean(code)) && /<Widget\/?>/.test(clean(code)) },
+      { message: 'Give the boundary an onError so the failure is reported', test: (code) => /onError=\{reportError\}/.test(clean(code)) }
+    ]
+  },
   'debug-strict-mode': [
     { message: 'Clean up the timer', test: code => /clearTimeout\(timer\)/.test(code) },
     { message: 'Return a cleanup function from the Effect', test: code => /return\s*\(\)\s*=>\s*clearTimeout/.test(code) }
@@ -662,3 +814,6 @@ export const validators = {
   ],
 
 };
+
+
+

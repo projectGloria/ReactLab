@@ -1,7 +1,7 @@
 export default {
   "id": "mental-models",
   "title": "React Mental Models",
-  "description": "Build the execution model behind rendering, state ownership, identity, purity, and events.",
+  "description": "Rendering snapshots, state ownership, identity, and purity.",
   "icon": "Brain",
   "lessons": [
     {
@@ -43,17 +43,27 @@ export default {
         "code": "function handleClick() {\n  setCount(previous => previous + 1);\n  setCount(previous => previous + 1);\n  setCount(previous => previous + 1);\n}",
         "steps": [
           {
-            "highlightLines": [2],
+            "highlightLines": [
+              2
+            ],
             "description": "Instead of passing a *value* (`count + 1`, which reads the frozen snapshot), this passes a *function*. React doesn't evaluate it immediately — it queues it as an instruction: \"whatever the state ends up being at this point, add 1 to it.\"",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [2, 3, 4],
+            "highlightLines": [
+              2,
+              3,
+              4
+            ],
             "description": "All three calls queue an updater function rather than a value. React now has a queue of three `previous => previous + 1` functions attached to this one click event, instead of three copies of the same stale `count + 1` value.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [2, 3, 4],
+            "highlightLines": [
+              2,
+              3,
+              4
+            ],
             "description": "Before the next render, React processes the queue in order, feeding each function the output of the one before it: `0 → 1 → 2 → 3`. The functional form is the escape hatch specifically for \"the next value depends on the value right before it, queued in the same event\" — which is exactly this case.",
             "stateSnapshot": {}
           }
@@ -67,7 +77,11 @@ export default {
             "code": "function handleClick() {\n  console.log(count); // 0\n  setCount(count + 1);\n  console.log(count); // still 0!\n}",
             "steps": [
               {
-                "highlightLines": [2, 3, 4],
+                "highlightLines": [
+                  2,
+                  3,
+                  4
+                ],
                 "description": "Both `console.log(count)` calls print the same value. `setCount` schedules a re-render — it does not reach back and mutate the `count` constant that's already sitting in this function's closure. The new value only exists once React re-runs the component and hands the new render a new `count`."
               }
             ]
@@ -80,7 +94,11 @@ export default {
             "code": "// count starts at 0\nsetCount(count + 1); // queues the value 1 (0 + 1)\nsetCount(count + 1); // queues the value 1 (0 + 1) — same count!\nsetCount(count + 1); // queues the value 1 (0 + 1) — same count!\n// React keeps only the LAST value queued for this key: 1",
             "steps": [
               {
-                "highlightLines": [2, 3, 4],
+                "highlightLines": [
+                  2,
+                  3,
+                  4
+                ],
                 "description": "Each call reads `count` from the same frozen snapshot — 0 — so each one queues the literal value 1, not \"one more than the last queued update.\" Three value-based updates in a row collapse to a single net change. This is exactly what the functional-updater form is for: it lets each queued update see the *previous queued update's result*, not just the render's original snapshot."
               }
             ]
@@ -126,12 +144,16 @@ export default {
         "code": "const visibleCount = items.filter(item => item.active).length;",
         "steps": [
           {
-            "highlightLines": [1],
+            "highlightLines": [
+              1
+            ],
             "description": "`visibleCount` is not stored in `useState` at all — it's a plain `const`, recalculated fresh on every render straight from `items`, which is the actual source of truth.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [1],
+            "highlightLines": [
+              1
+            ],
             "description": "Because it's derived rather than stored, it is structurally impossible for `visibleCount` to disagree with `items` — there's no second value that a bug (or a missed dependency) could let drift out of sync.",
             "stateSnapshot": {}
           }
@@ -145,11 +167,15 @@ export default {
             "code": "// Stored state: CAN disagree with items\nconst [visibleCount, setVisibleCount] = useState(0);\n\n// Derived value: CANNOT disagree with items\nconst visibleCount = items.filter(i => i.active).length;",
             "steps": [
               {
-                "highlightLines": [2],
+                "highlightLines": [
+                  2
+                ],
                 "description": "If `visibleCount` is its own state, some code path has to remember to call `setVisibleCount` every single time `items` changes. Miss one call site — a bulk edit, a websocket update, an undo action — and the UI silently shows the wrong count while looking perfectly fine."
               },
               {
-                "highlightLines": [5],
+                "highlightLines": [
+                  5
+                ],
                 "description": "A derived value has no update-forgetting failure mode at all, because there's nothing to forget to update. This is the practical test for \"should this be state\": if a missed update could make the value wrong, it probably shouldn't be state."
               }
             ]
@@ -162,11 +188,18 @@ export default {
             "code": "// This filter runs on every render — and that's fine\nconst visibleCount = items.filter(item => item.active).length;\n\n// Only reach for useMemo if profiling shows this is actually slow\nconst visibleCount = useMemo(\n  () => items.filter(item => item.active).length,\n  [items]\n);",
             "steps": [
               {
-                "highlightLines": [2],
+                "highlightLines": [
+                  2
+                ],
                 "description": "Filtering a small array is cheap — far cheaper than the extra render cycle and state-sync bug surface that storing it separately introduces. Recompute during render by default."
               },
               {
-                "highlightLines": [5, 6, 7, 8],
+                "highlightLines": [
+                  5,
+                  6,
+                  7,
+                  8
+                ],
                 "description": "`useMemo` is a performance escape hatch for when profiling shows the calculation itself is expensive, not a default wrapper for every derived value. Reach for it after measuring, not before — see the Rendering & Performance module."
               }
             ]
@@ -220,17 +253,23 @@ export default {
         "code": "export default function App() {\n  const [query, setQuery] = useState('');\n  return <><SearchBox query={query} onQueryChange={setQuery} /><Results query={query} /></>;\n}",
         "steps": [
           {
-            "highlightLines": [2],
+            "highlightLines": [
+              2
+            ],
             "description": "The state moved out of `SearchBox` and up into `App` — the nearest component that renders both `SearchBox` and `Results`. `App` is now the single owner of `query`.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [3],
+            "highlightLines": [
+              3
+            ],
             "description": "`SearchBox` no longer owns `query` — it receives the current value as a prop and reports changes back up through `onQueryChange`. It became a \"controlled\" component: display what you're told, report what happens.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [3],
+            "highlightLines": [
+              3
+            ],
             "description": "`Results` now also receives `query` as a prop, so it always renders in sync with what's actually typed — both siblings read from the same single source of truth in `App`, instead of `SearchBox` privately holding a copy that `Results` can never see.",
             "stateSnapshot": {}
           }
@@ -244,11 +283,18 @@ export default {
             "code": "// If only ONE component ever calls the setter,\n// state can usually stay local to that component.\n\n// If MULTIPLE components need to read OR change it,\n// it has to live in their nearest common parent.",
             "steps": [
               {
-                "highlightLines": [1, 2, 3],
+                "highlightLines": [
+                  1,
+                  2,
+                  3
+                ],
                 "description": "A component that owns state no one else needs can keep it entirely to itself — a toggle's open/closed flag, an input's raw draft text before submit, a hover state. No lifting required."
               },
               {
-                "highlightLines": [4, 5],
+                "highlightLines": [
+                  4,
+                  5
+                ],
                 "description": "The moment a second component needs to read *or* influence that value, it can no longer live only in the first component — it has to move up to whichever component is an ancestor of both. This is the actual trigger for lifting state up, not \"state is always better lifted.\""
               }
             ]
@@ -261,11 +307,17 @@ export default {
             "code": "// Two siblings under the same parent, 1 level apart:\n// ✅ Lift state to the parent, pass down as props\n\n// A value needed 6 components deep in an unrelated branch:\n// ✅ NOW Context earns its cost",
             "steps": [
               {
-                "highlightLines": [1, 2],
+                "highlightLines": [
+                  1,
+                  2
+                ],
                 "description": "It's tempting to reach for Context the moment two components need to share something. But for state that's genuinely local to a small, nearby part of the tree, lifting it to the shared parent and passing plain props down is simpler, easier to trace, and doesn't force every consumer to re-render when the value changes."
               },
               {
-                "highlightLines": [4, 5],
+                "highlightLines": [
+                  4,
+                  5
+                ],
                 "description": "Context earns its cost when the prop would otherwise have to thread through many layers of components that don't themselves care about it — \"prop drilling\" as a real, felt problem. Ownership still starts with the same question: which component is the lowest common owner? Context just changes *how* you deliver the value from there, not who owns it."
               }
             ]
@@ -275,8 +327,8 @@ export default {
     },
     {
       "id": "identity-and-keys",
-      "title": "Identity, Keys, and State Preservation",
-      "content": "\n# Identity, Keys, and State Preservation\n\n### What is it?\nReact decides whether a rendered element is \"the same component instance as before\" or \"a new one\" based on its **identity** — a combination of component type, position in the tree, and, when present, its `key`. Same identity across renders means React preserves that instance's local state; different identity means it discards the old instance and mounts a fresh one.\n\n### Why do we need it?\nIdentity is what makes a counter's value survive a prop change but reset when a list reorders without stable keys — and it's the mechanism behind a subtle class of bugs: two different logical items rendered at the same position, with no key or an unstable key, look like \"the same instance\" to React, so local state leaks from one to the other exactly where it wasn't intended to.\n\n### How?\nBy default, identity comes from type and position: two renders of `<Timer>` at the same spot in the tree are the same instance even if their props differ, and its state survives. A `key` folds additional information into that identity — most commonly an item's own id in a list, so React can match instances correctly when the list reorders. The same mechanism can be used deliberately: giving a component a key derived from something like a selected user's id forces React to treat a state-carrying subtree as brand new whenever that value changes.\n\n### Syntax/Example\n```jsx\n// Selecting a different user should reset the editor's local draft state\n<Editor key={selectedUser.id} user={selectedUser} />\n```\n\n### Common Pitfalls & Gotchas\n1. **Using array index as a key.** Index-based keys describe position, not identity — after an item is inserted or removed anywhere but the end, every subsequent item's \"identity\" silently shifts, and their local state (an open dropdown, a draft) can end up attached to the wrong row.\n2. **Not realizing state can persist across visually different renders.** Two renders that look completely different (different props, different content) are still the same instance — and keep the same state — if type, position, and key all match.\n3. **Forgetting that a key change is a full reset, not a soft update.** React genuinely discards the old instance and its state rather than patching it — useful when that's the intent, disruptive when it isn't.\n\n### Challenge and Solution\n**Challenge:** One `Editor` instance is reused for two different users, so a draft typed for one user leaks into the next when the selection changes. Add a key so selecting another user starts a fresh editor.\n\n**Solution:** Put `key={selectedUser.id}` on `Editor`, so React treats a different user as a different component identity and mounts a fresh instance instead of reusing the old one's state.\n\n### Hints\n* Identity is type + position + key — changing any of them can create a \"new\" instance from React's point of view.\n* A changing key isn't just for lists — it's a general-purpose way to intentionally reset a subtree's local state.\n\n\n### Example\n```jsx\nimport { useState } from 'react';\n\nfunction Counter({ label }) {\n  const [n, setN] = useState(0);\n  return (\n    <button onClick={() => setN(n + 1)}>\n      {label}: {n}\n    </button>\n  );\n}\n\nexport default function IdentityDemo() {\n  const [isSecond, setIsSecond] = useState(false);\n\n  return (\n    <div style={{ padding: 20 }}>\n      {isSecond ? <Counter label=\"Second\" /> : <Counter label=\"First\" />}\n      <button onClick={() => setIsSecond(v => !v)}>Swap label</button>\n    </div>\n  );\n}\n```\n",
+      "title": "Identity, Keys & Deliberate Remounts",
+      "content": "\n# Identity, Keys & Deliberate Remounts\n\n### What is it?\nReact decides whether a rendered element is \"the same component instance as before\" or \"a new one\" based on its **identity** — a combination of component type, position in the tree, and, when present, its `key`. Same identity across renders means React preserves that instance's local state; different identity means it discards the old instance and mounts a fresh one.\n\n### Why do we need it?\nIdentity is what makes a counter's value survive a prop change but reset when a list reorders without stable keys — and it's the mechanism behind a subtle class of bugs: two different logical items rendered at the same position, with no key or an unstable key, look like \"the same instance\" to React, so local state leaks from one to the other exactly where it wasn't intended to.\n\n### How?\nBy default, identity comes from type and position: two renders of `<Timer>` at the same spot in the tree are the same instance even if their props differ, and its state survives. A `key` folds additional information into that identity — most commonly an item's own id in a list, so React can match instances correctly when the list reorders. The same mechanism can be used deliberately: giving a component a key derived from something like a selected user's id forces React to treat a state-carrying subtree as brand new whenever that value changes.\n\n### The three rules React actually applies\nEverything about identity reduces to three rules, applied in this order:\n\n1. **Same type, same position, same key → same instance.** React updates the props on the component that is already there. Its state, its refs and its Effects all survive. This is the default, and it holds even when the two renders look completely different.\n2. **Different type at the same position → destroy and rebuild.** `{flag ? <CounterA /> : <CounterB />}` unmounts one component and mounts the other, wiping state, whether you wanted that or not. The same rule is why defining a component *inside* another component is so destructive: the inner function is a new type on every render, so React remounts it every time.\n3. **A `key` overrides rule 1.** Same type, same position, *different key* means React treats it as a different thing: unmount the old instance, mount a fresh one.\n\nRule 3 is the only one you control directly, which makes it the useful one — it is how you say \"reset this subtree now\" without writing a single line of reset logic.\n\n### Syntax/Example\n```jsx\n// Selecting a different user should reset the editor's local draft state\n<Editor key={selectedUser.id} user={selectedUser} />\n\n// A type change at the same position resets state too — often unintentionally\n{isEditing ? <Panel mode=\"edit\" /> : <ReadOnlyPanel />}\n```\n\n### Common Pitfalls & Gotchas\n1. **Using array index as a key.** Index-based keys describe position, not identity — after an item is inserted or removed anywhere but the end, every subsequent item's \"identity\" silently shifts, and their local state (an open dropdown, a draft) can end up attached to the wrong row.\n2. **Not realizing state can persist across visually different renders.** Two renders that look completely different (different props, different content) are still the same instance — and keep the same state — if type, position, and key all match.\n3. **Forgetting that a key change is a full reset, not a soft update.** React genuinely discards the old instance and its state rather than patching it — useful when that's the intent, disruptive when it isn't.\n\n### Challenge and Solution\n**Challenge:** One `Editor` instance is reused for two different users, so a draft typed for one user leaks into the next when the selection changes. Add a key so selecting another user starts a fresh editor.\n\n**Solution:** Put `key={selectedUser.id}` on `Editor`, so React treats a different user as a different component identity and mounts a fresh instance instead of reusing the old one's state.\n\n### Hints\n* Identity is type + position + key — changing any of them can create a \"new\" instance from React's point of view.\n* A changing key isn't just for lists — it's a general-purpose way to intentionally reset a subtree's local state.\n\n\n### Example\n```jsx\nimport { useState } from 'react';\n\nfunction Counter({ label }) {\n  const [n, setN] = useState(0);\n  return (\n    <button onClick={() => setN(n + 1)}>\n      {label}: {n}\n    </button>\n  );\n}\n\nexport default function IdentityDemo() {\n  const [isSecond, setIsSecond] = useState(false);\n\n  return (\n    <div style={{ padding: 20 }}>\n      {isSecond ? <Counter label=\"Second\" /> : <Counter label=\"First\" />}\n      <button onClick={() => setIsSecond(v => !v)}>Swap label</button>\n    </div>\n  );\n}\n```\n",
       "starterCode": "import { useState } from 'react';\nfunction Editor({ user }) {\n  const [draft, setDraft] = useState(user.name);\n  return <input aria-label=\"Draft\" value={draft} onChange={e => setDraft(e.target.value)} />;\n}\nexport default function App() {\n  const [selectedUser, setSelectedUser] = useState({ id: 1, name: 'Ada' });\n  return <><button onClick={() => setSelectedUser({ id: 2, name: 'Linus' })}>Select Linus</button><Editor user={selectedUser} /></>;\n}",
       "solutionCode": "import { useState } from 'react';\nfunction Editor({ user }) {\n  const [draft, setDraft] = useState(user.name);\n  return <input aria-label=\"Draft\" value={draft} onChange={e => setDraft(e.target.value)} />;\n}\nexport default function App() {\n  const [selectedUser, setSelectedUser] = useState({ id: 1, name: 'Ada' });\n  return <><button onClick={() => setSelectedUser({ id: 2, name: 'Linus' })}>Select Linus</button><Editor key={selectedUser.id} user={selectedUser} /></>;\n}",
       "exampleWalkthrough": {
@@ -310,17 +362,23 @@ export default {
         "code": "<Editor key={selectedUser.id} user={selectedUser} />",
         "steps": [
           {
-            "highlightLines": [1],
+            "highlightLines": [
+              1
+            ],
             "description": "Before this fix, `<Editor user={selectedUser} />` had no key — its identity was just \"the Editor at this position,\" which never changes no matter who `selectedUser` is. So React kept reusing the same instance, `draft` and all, when the user changed.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [1],
+            "highlightLines": [
+              1
+            ],
             "description": "`key={selectedUser.id}` folds the user's identity into the component's identity. When `selectedUser.id` goes from `1` to `2`, React sees a *different* key at this position — not the same Editor with new props, but conceptually a new component. It's not a coincidence that keys and identity share a name; the key literally participates in what makes two renders the same instance or not.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [1],
+            "highlightLines": [
+              1
+            ],
             "description": "React discards the old instance (and its stale `draft` state) and mounts a fresh `Editor`, which re-initializes `draft` from the new `user.name`. This is a deliberate, controlled reset — the same mechanism list keys use to track identity across reorders, just intentionally pointed at \"reset this subtree when X changes\" instead.",
             "stateSnapshot": {}
           }
@@ -334,7 +392,9 @@ export default {
             "code": "// List reorder — React tracks identity BY KEY, not by array index\n// Before: [{id: 'a'}, {id: 'b'}, {id: 'c'}]\n// After a sort: [{id: 'c'}, {id: 'a'}, {id: 'b'}]\n\nitems.map(item => <Row key={item.id} data={item} />)",
             "steps": [
               {
-                "highlightLines": [5],
+                "highlightLines": [
+                  5
+                ],
                 "description": "When the array reorders, React matches old instances to new ones by key, not by position. `key=\"a\"` is still the same `Row` instance it always was — its local state (an open dropdown, a hover flag) moves with it to its new slot, instead of getting scrambled the way index-based keys would scramble it."
               }
             ]
@@ -347,12 +407,92 @@ export default {
             "code": "// Using array index as key:\nitems.map((item, index) => <Row key={index} data={item} />)\n\n// After deleting items[0]:\n// Row that WAS at index 1 is now index 0 —\n// React thinks it's the SAME instance as the old index-0 Row",
             "steps": [
               {
-                "highlightLines": [2],
+                "highlightLines": [
+                  2
+                ],
                 "description": "The console warning about missing/index keys is not just style nagging — index-based keys actively lie about identity whenever the list reorders, filters, or has items inserted/removed anywhere but the end."
               },
               {
-                "highlightLines": [4, 5, 6],
+                "highlightLines": [
+                  4,
+                  5,
+                  6
+                ],
                 "description": "After a deletion shifts everything up by one, the item now at index 0 gets matched to whatever *used to* have key `0` — even though it's conceptually a completely different row. Any local state that row was holding (an expanded panel, a text draft) now appears to belong to the wrong item. Always derive keys from the data itself (an id), never from array position, unless the list is provably static and never reorders."
+              }
+            ]
+          }
+        },
+        {
+          "title": "\"I switched branches of a ternary, so why didn't the state reset?\"",
+          "type": "misconception",
+          "walkthrough": {
+            "code": "return (\n  <div>\n    {isEditing ? <ProfileEditor mode=\"edit\" /> : <ProfileEditor mode=\"view\" />}\n  </div>\n);\n\n// Switching branches changes nothing about identity:\n//   same type (ProfileEditor), same position, same (absent) key\n// -> React updates the prop on the instance that is already there.",
+            "steps": [
+              {
+                "highlightLines": [
+                  3
+                ],
+                "description": "Two branches of a ternary look like two different things, and for React they are not. It sees `ProfileEditor` at this position before, and `ProfileEditor` at this position after — rule 1, same instance, state preserved.\n\nThe draft the user typed in edit mode is still sitting there when you switch to view mode and back. Sometimes that is exactly what you wanted; when it is not, it looks like a haunting."
+              },
+              {
+                "highlightLines": [
+                  7,
+                  8,
+                  9
+                ],
+                "description": "If you want the switch to reset, say so: `<ProfileEditor key={isEditing ? 'edit' : 'view'} mode={...} />`. The key is the only thing in that JSX that changes React's mind.\n\nThe reverse trap is just as common — two *different* component types in a ternary reset state every time you toggle, which people then try to fix with an Effect that restores it. Fix the identity, not the symptom."
+              }
+            ]
+          }
+        },
+        {
+          "title": "The `key` remount trick, used deliberately",
+          "type": "did-you-know",
+          "walkthrough": {
+            "code": "// Force a complete reset when the source changes\n<VideoPlayer key={videoUrl} src={videoUrl} />\n\n// Same idea for a form that must not carry one record's draft into the next\n<RecordForm key={record.id} record={record} />\n\n// What a remount actually costs:\n//   state destroyed, every Effect cleanup run, DOM torn down and rebuilt,\n//   focus and scroll position inside the subtree lost",
+            "steps": [
+              {
+                "highlightLines": [
+                  1,
+                  2,
+                  4,
+                  5
+                ],
+                "description": "Some components accumulate internal state you have no API to clear — a media player's buffer, a third-party editor, a chart's zoom level. Changing the key is a one-line \"start over\" that needs no cooperation from the component at all."
+              },
+              {
+                "highlightLines": [
+                  7,
+                  8,
+                  9
+                ],
+                "description": "It is not free, and the cost is invisible in the diff. A key on a large subtree throws away every DOM node beneath it and re-runs every mount Effect, which can mean refetching data the user already had.\n\nUse it where a reset is genuinely what you mean. Reach for a prop or a state update when you only need part of the component to change."
+              }
+            ]
+          }
+        },
+        {
+          "title": "Is index-as-key ever acceptable?",
+          "type": "did-you-know",
+          "walkthrough": {
+            "code": "const staticMenu = ['Home', 'About', 'Contact'];\n\n// Acceptable: this array is a constant and nothing renders into it\nstaticMenu.map((item, index) => <li key={index}>{item}</li>)\n\n// Not acceptable the moment any of these becomes true:\n//   the list can reorder, filter or sort\n//   items can be inserted or removed anywhere but the end\n//   the rows hold any state of their own (an input, a checkbox, an open panel)",
+            "steps": [
+              {
+                "highlightLines": [
+                  3,
+                  4
+                ],
+                "description": "Index keys describe position, and for a hardcoded list that never moves, position *is* identity. There is nothing to get wrong, and inventing ids for three literal strings would be ceremony."
+              },
+              {
+                "highlightLines": [
+                  6,
+                  7,
+                  8,
+                  9
+                ],
+                "description": "The trouble is that lists rarely stay static. \"It never reorders\" is true right up until someone adds sorting, and the resulting bug — state attached to the wrong row — looks nothing like the change that caused it.\n\nIf the data has an id, use it. The exception is narrow enough that reaching for it should feel like a decision, not a default."
               }
             ]
           }
@@ -362,7 +502,7 @@ export default {
     {
       "id": "pure-rendering",
       "title": "Render Purity",
-      "content": "\n# Render Purity\n\n### What is it?\nRendering a component should be a **pure calculation**: given the same props, state, and context, it returns the same JSX, with no side effects that reach outside the function — no mutating variables declared elsewhere, no writing to the DOM directly, no kicking off network requests.\n\n### Why do we need it?\nReact does not guarantee it calls your component function exactly once per user-visible update. In development, Strict Mode deliberately double-invokes component functions to surface impurities. Under concurrent rendering, React can start rendering a component, pause it, discard the attempt entirely, or render it more than once before committing anything to the screen. A pure calculation tolerates all of that safely. A mutation does not: a write to some external variable happens even for a render that gets thrown away and never shown to the user.\n\n### How?\nKeep every value the user actually sees driven by `useState` (or props derived from it), computed fresh during render. If a side effect is needed — logging, subscribing to something external, reading `document` — that work belongs in an event handler (in direct response to something the user did) or a `useEffect` (for synchronization with something outside React), never inline in the render body itself.\n\n### Syntax/Example\n```jsx\n// Mutates a variable outside the render, during render\nlet renders = 0;\nfunction ImpureApp() {\n  renders += 1;\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;\n}\n\n// Pure — nothing escapes this render's own return value\nfunction PureApp() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;\n}\n```\n\n### Common Pitfalls & Gotchas\n1. **\"It worked when I tested it.\"** Impure render code often works in the simplest cases, because React frequently does call a component exactly once per commit — the bug hides until Strict Mode, a Suspense retry, or a concurrent feature changes that assumption, often intermittently and hard to reproduce.\n2. **Module-level caching \"for performance.\"** Writing computed results into a variable declared outside the component is a mutation during render, even if the intent is just memoization — reach for `useMemo` instead, which is designed to be safe under repeated or discarded renders.\n3. **Wanting a render counter for debugging.** A module-level counter mutated in the render body over-counts under Strict Mode's double-invoke; a `useRef` mutated in the render body is the closer-to-sanctioned version, since it's scoped to the component instance.\n\n### Challenge and Solution\n**Challenge:** A module-level `renders` variable is mutated directly in the render body to display a render count. Remove it and rely only on React state for the user-visible count.\n\n**Solution:** Delete the module-level counter and its mutation; keep `count` in `useState` and derive everything the button displays from that.\n\n### Hints\n* If a render can be called more than once, paused, or discarded, anything it mutates outside itself is at risk of running when the user never sees the result.\n* Side effects belong in event handlers or `useEffect` — never inline in the function body that produces JSX.\n\n\n### Example\n```jsx\nimport { useState } from 'react';\n\nconst guests = ['Ada', 'Linus', 'Grace'];\n\nexport default function GuestList() {\n  const [showAll, setShowAll] = useState(false);\n\n  // Pure: derives a new array and never touches `guests`.\n  const visible = showAll ? guests : guests.slice(0, 1);\n\n  return (\n    <div style={{ padding: 20 }}>\n      <ul>\n        {visible.map(name => <li key={name}>{name}</li>)}\n      </ul>\n      <button onClick={() => setShowAll(v => !v)}>\n        {showAll ? 'Show fewer' : 'Show all'}\n      </button>\n      <p>The source list still has {guests.length} names.</p>\n    </div>\n  );\n}\n```\n",
+      "content": "\n# Render Purity\n\n### What is it?\nRendering a component should be a **pure calculation**: given the same props, state, and context, it returns the same JSX, with no side effects that reach outside the function — no mutating variables declared elsewhere, no writing to the DOM directly, no kicking off network requests.\n\n### Why do we need it?\nReact does not guarantee it calls your component function exactly once per user-visible update. In development, Strict Mode deliberately double-invokes component functions to surface impurities. Under concurrent rendering, React can start rendering a component, pause it, discard the attempt entirely, or render it more than once before committing anything to the screen. A pure calculation tolerates all of that safely. A mutation does not: a write to some external variable happens even for a render that gets thrown away and never shown to the user.\n\n### How?\nKeep every value the user actually sees driven by `useState` (or props derived from it), computed fresh during render. If a side effect is needed — logging, subscribing to something external, reading `document` — that work belongs in an event handler (in direct response to something the user did) or a `useEffect` (for synchronization with something outside React), never inline in the render body itself.\n\n### Syntax/Example\n```jsx\n// Mutates a variable outside the render, during render\nlet renders = 0;\nfunction ImpureApp() {\n  renders += 1;\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;\n}\n\n// Pure — nothing escapes this render's own return value\nfunction PureApp() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;\n}\n```\n\n### Common Pitfalls & Gotchas\n1. **\"It worked when I tested it.\"** Impure render code often works in the simplest cases, because React frequently does call a component exactly once per commit — the bug hides until Strict Mode, a Suspense retry, or a concurrent feature changes that assumption, often intermittently and hard to reproduce.\n2. **Module-level caching \"for performance.\"** Writing computed results into a variable declared outside the component is a mutation during render, even if the intent is just memoization — reach for `useMemo` instead, which is designed to be safe under repeated or discarded renders.\n3. **Wanting a render counter for debugging.** A module-level counter mutated in the render body over-counts under Strict Mode's double-invoke. Swapping it for a `useRef` mutated in the render body does **not** fix that — the ref object survives the double-invoke, so it double-counts identically, and React's rules say not to read or write `ref.current` during render either. Count commits in an Effect instead.\n\n### Challenge and Solution\n**Challenge:** A module-level `renders` variable is mutated directly in the render body to display a render count. Remove it and rely only on React state for the user-visible count.\n\n**Solution:** Delete the module-level counter and its mutation; keep `count` in `useState` and derive everything the button displays from that.\n\n### Hints\n* If a render can be called more than once, paused, or discarded, anything it mutates outside itself is at risk of running when the user never sees the result.\n* Side effects belong in event handlers or `useEffect` — never inline in the function body that produces JSX.\n\n\n### Example\n```jsx\nimport { useState } from 'react';\n\nconst guests = ['Ada', 'Linus', 'Grace'];\n\nexport default function GuestList() {\n  const [showAll, setShowAll] = useState(false);\n\n  // Pure: derives a new array and never touches `guests`.\n  const visible = showAll ? guests : guests.slice(0, 1);\n\n  return (\n    <div style={{ padding: 20 }}>\n      <ul>\n        {visible.map(name => <li key={name}>{name}</li>)}\n      </ul>\n      <button onClick={() => setShowAll(v => !v)}>\n        {showAll ? 'Show fewer' : 'Show all'}\n      </button>\n      <p>The source list still has {guests.length} names.</p>\n    </div>\n  );\n}\n```\n",
       "starterCode": "import { useState } from 'react';\nlet renders = 0;\nexport default function App() {\n  const [count, setCount] = useState(0);\n  renders += 1;\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count} / Renders: {renders}</button>;\n}",
       "solutionCode": "import { useState } from 'react';\nexport default function App() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}",
       "exampleWalkthrough": {
@@ -397,12 +537,18 @@ export default {
         "code": "export default function App() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>Clicks: {count}</button>;\n}",
         "steps": [
           {
-            "highlightLines": [1, 2, 3],
+            "highlightLines": [
+              1,
+              2,
+              3
+            ],
             "description": "The module-level `renders` variable and its `renders += 1` mutation are gone entirely. The only value the button displays now is `count`, which lives in `useState` and is scoped to this component instance.",
             "stateSnapshot": {}
           },
           {
-            "highlightLines": [3],
+            "highlightLines": [
+              3
+            ],
             "description": "Nothing in this render reaches outside the function to mutate shared state. Call `App()` once, twice, or a hundred times with the same `count` — you get the identical JSX back every time, with zero side effects left behind. That's what makes it safe for React to call it as many times, in whatever order, as its internals need to.",
             "stateSnapshot": {}
           }
@@ -413,15 +559,30 @@ export default {
           "title": "\"But I just want a render counter for debugging\"",
           "type": "misconception",
           "walkthrough": {
-            "code": "// ❌ Mutates during render — unreliable under Strict Mode / concurrent rendering\nrenders += 1;\n\n// ✅ Track render count as a ref update — still not render-pure, but\n// refs are the sanctioned escape hatch and don't affect what gets returned\nconst renderCount = useRef(0);\nrenderCount.current += 1;",
+            "code": "// ❌ Mutates during render — counts function calls, not committed renders\nrenders += 1;\n\n// ❌ Same problem, smaller scope — the ref survives the double-invoke too\nconst renderCount = useRef(0);\nrenderCount.current += 1;\n\n// ✅ Effects only run for renders React actually committed\nconst renderCount = useRef(0);\nuseEffect(() => { renderCount.current += 1; });",
             "steps": [
               {
-                "highlightLines": [2],
-                "description": "A module-level counter mutated in the render body will over-count under Strict Mode's double-invoke and can be wrong in other ways under concurrent rendering — it's counting function calls, not committed renders."
+                "highlightLines": [
+                  1,
+                  2
+                ],
+                "description": "A module-level counter mutated in the render body over-counts under Strict Mode's double-invoke and can be wrong in other ways under concurrent rendering — it's counting function calls, not committed renders."
               },
               {
-                "highlightLines": [5, 6],
-                "description": "If you need a render counter for debugging, mutating a `useRef` in the render body is the closer-to-sanctioned version — it's still technically a side effect during render, which React explicitly tolerates for refs used this way, but it's scoped to the component instance and won't leak across renders/instances the way a module-level variable does. Either way, treat render-count tracking as a debugging tool, not production logic."
+                "highlightLines": [
+                  4,
+                  5,
+                  6
+                ],
+                "description": "Reaching for a `useRef` here is the tempting fix, and it does not work. The ref object is the same object across Strict Mode's two invocations, so this increments twice exactly like the module variable did. React also asks you not to read or write `ref.current` during render at all — a ref is not an exemption from purity, it is just a container that outlives the render."
+              },
+              {
+                "highlightLines": [
+                  8,
+                  9,
+                  10
+                ],
+                "description": "Effects run only for renders React actually committed, so this counts what you meant to count, and it keeps the render body pure. An Effect with no dependency array fires after every commit, which is exactly a render counter.\n\nEither way, treat render-count tracking as a debugging tool, not production logic."
               }
             ]
           }
@@ -433,110 +594,20 @@ export default {
             "code": "// In production, this mutation might \"work\" because React\n// usually calls render once per commit.\n\n// It silently breaks the moment you add:\n// - <StrictMode> (double-invoke in dev)\n// - a Suspense boundary that retries\n// - startTransition / concurrent features that can abandon a render",
             "steps": [
               {
-                "highlightLines": [1, 2],
+                "highlightLines": [
+                  1,
+                  2
+                ],
                 "description": "Impure render code often \"works\" in the simplest cases because React frequently does call a component exactly once per commit — so the bug hides until conditions change."
               },
               {
-                "highlightLines": [4, 5, 6, 7],
+                "highlightLines": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
                 "description": "The moment Strict Mode, Suspense retries, or concurrent rendering enters the picture, that assumption breaks — and it breaks silently, often only under specific timing that's hard to reproduce. This is why purity is treated as a hard rule rather than \"a good idea when convenient\": the bugs it prevents are exactly the intermittent, hard-to-reproduce kind."
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "id": "event-vs-effect",
-      "title": "Event Handlers vs Effects",
-      "content": "\n# Event Handlers vs Effects\n\n### What is it?\nTwo different kinds of code react to change in React, for two different reasons. An **event handler** runs because the user did something specific — a click, a submit, a keypress — and expresses their intent directly. An **Effect** runs after rendering to synchronize the component with something outside React, and keeps running in sync with that thing for as long as it's relevant, regardless of what originally caused a value to change.\n\n### Why do we need it?\nConfusing the two produces a specific, easy-to-miss bug pattern: routing a user action through state and an Effect that watches for that state, instead of just handling the action directly. The Effect can't tell the difference between \"the user just clicked\" and \"this value changed for some other reason\" — so it can also fire on initial mount, or in response to an unrelated re-render that happens to touch the same state, doing work the user never actually asked for at that moment.\n\n### How?\nAsk what caused the code to need to run. If the answer is \"a specific thing the user just did,\" put the response directly in that event's handler — a click handler, a submit handler. If the answer is \"this needs to stay synchronized with something outside React for as long as the component is mounted\" — a subscription, a browser API, a WebSocket connection — that's a genuine Effect, independent of any one triggering action.\n\n### Syntax/Example\n```jsx\n// Routes a click through state, then an Effect that watches it\nfunction Indirect() {\n  const [submitted, setSubmitted] = useState(false);\n  useEffect(() => { if (submitted) console.log('submitted'); }, [submitted]);\n  return <button onClick={() => setSubmitted(true)}>Submit</button>;\n}\n\n// Handles the click directly, at the moment intent is known\nfunction Direct() {\n  return <button onClick={() => console.log('submitted')}>Submit</button>;\n}\n```\n\n### Common Pitfalls & Gotchas\n1. **Using an Effect as a relay for a click.** This adds an invisible extra render — React has to commit the state change before the Effect is even eligible to run — for work that could have happened directly in the handler.\n2. **An Effect that can't distinguish \"why\" a value changed.** If the same state can become `true` from more than one cause (a click, a restored value, another effect), an Effect watching it fires for all of them equally, not just the one intended.\n3. **Assuming any state-change-driven side effect is an Effect's job.** The real test is whether the work needs to track a value over time and stay synchronized with something external — not whether it merely happens after state changes.\n\n### Challenge and Solution\n**Challenge:** A button click is routed through state and an Effect purely to log the click. Move the work into the event handler directly.\n\n**Solution:** Call `console.log('submitted')` straight from `onClick`; delete the `submitted` state and the Effect that watched it — there's nothing left that needs synchronizing.\n\n### Hints\n* Ask \"did something just happen, or does this need to stay synchronized?\" — the answer picks the right tool.\n* An Effect that exists only to react to one specific state flip, set by one specific click, is usually a click handler wearing a disguise.\n\n\n### Example\n```jsx\nimport { useEffect, useState } from 'react';\n\nexport default function CartButton() {\n  const [items, setItems] = useState([]);\n\n  // An Effect, because the page background lives outside React and has to\n  // be kept in step with state.\n  useEffect(() => {\n    document.body.style.backgroundColor = items.length > 2 ? '#3a2318' : '';\n  }, [items]);\n\n  function handleAdd() {\n    // An event handler, because this is caused by the click, not by a value.\n    setItems(prev => [...prev, 'Keyboard']);\n    console.log('add_to_cart');\n  }\n\n  return (\n    <div style={{ padding: 20 }}>\n      <button onClick={handleAdd}>Add to cart</button>\n      <p>{items.length} in cart. Add a third to change the background.</p>\n    </div>\n  );\n}\n```\n",
-      "starterCode": "import { useEffect, useState } from 'react';\nexport default function App() {\n  const [submitted, setSubmitted] = useState(false);\n  useEffect(() => { if (submitted) console.log('submitted'); }, [submitted]);\n  return <button onClick={() => setSubmitted(true)}>Submit</button>;\n}",
-      "solutionCode": "export default function App() {\n  return <button onClick={() => console.log('submitted')}>Submit</button>;\n}",
-      "exampleWalkthrough": {
-        "code": "import { useEffect, useState } from 'react';\n\nexport default function CartButton() {\n  const [items, setItems] = useState([]);\n\n  // An Effect, because the page background lives outside React and has to\n  // be kept in step with state.\n  useEffect(() => {\n    document.body.style.backgroundColor = items.length > 2 ? '#3a2318' : '';\n  }, [items]);\n\n  function handleAdd() {\n    // An event handler, because this is caused by the click, not by a value.\n    setItems(prev => [...prev, 'Keyboard']);\n    console.log('add_to_cart');\n  }\n\n  return (\n    <div style={{ padding: 20 }}>\n      <button onClick={handleAdd}>Add to cart</button>\n      <p>{items.length} in cart. Add a third to change the background.</p>\n    </div>\n  );\n}",
-        "steps": [
-          {
-            "highlightLines": [
-              12,
-              13,
-              14,
-              15
-            ],
-            "description": "The analytics call sits in the handler because it is caused by the click. It happens once, at the exact moment the user's intent is known, and it needs no state to remember that the click occurred.\n\nThat is the test for an event handler: *this happened because the user did something specific.*",
-            "stateSnapshot": {}
-          },
-          {
-            "highlightLines": [
-              8,
-              9,
-              10
-            ],
-            "description": "The Effect exists for a different reason. The page background is an external system — it lives outside React's tree and does not re-render itself — so something has to push React's state out to it after each commit.\n\nThat is the test for an Effect: *this has to stay in step with state, regardless of what caused the state to change.* The background must be right after a click, after a restore from storage, after anything.",
-            "stateSnapshot": {}
-          },
-          {
-            "highlightLines": [
-              4,
-              10
-            ],
-            "description": "Now the anti-pattern this lesson exists to name. Suppose the analytics call were moved into an Effect keyed on an `addedToCart` flag instead.\n\nIt would then fire on the initial mount too, if that flag ever started `true` — a cart restored from `localStorage`, a page reopened from history — logging an \"add to cart\" the user never performed. The click would have become a fact about state rather than a moment in time, and moments in time cannot be reconstructed from state.",
-            "stateSnapshot": {}
-          },
-          {
-            "highlightLines": [
-              20,
-              21
-            ],
-            "description": "Click **Add to cart** three times and the preview background changes — the Effect running. Each click also logs once, from the handler.\n\nThe exact text output on the screen will be:\n`[Button: Add to cart]`\n`0 in cart. Add a third to change the background.`",
-            "stateSnapshot": {}
-          }
-        ]
-      },
-      "walkthrough": {
-        "code": "export default function App() {\n  return <button onClick={() => console.log('submitted')}>Submit</button>;\n}",
-        "steps": [
-          {
-            "highlightLines": [2],
-            "description": "The `submitted` state and the `useEffect` that watched it are both gone. `console.log('submitted')` now runs directly inside `onClick` — exactly where the user's intent (\"I clicked submit\") is actually known.",
-            "stateSnapshot": {}
-          },
-          {
-            "highlightLines": [2],
-            "description": "There's no relay step anymore: no state flips to trigger a watcher, no dependency array to get wrong, no risk of the Effect also firing on mount or for an unrelated reason. One click, one direct action — which is also one fewer render than the original version needed.",
-            "stateSnapshot": {}
-          }
-        ]
-      },
-      "insights": [
-        {
-          "title": "The test: \"does this need to stay synchronized, or did something just happen?\"",
-          "type": "did-you-know",
-          "walkthrough": {
-            "code": "// \"Something just happened\" → event handler\nonClick={() => { saveDraft(); showToast('Saved!'); }}\n\n// \"Needs to stay synchronized with an external system\" → Effect\nuseEffect(() => {\n  const subscription = chatRoom.subscribe(roomId);\n  return () => subscription.unsubscribe();\n}, [roomId]);",
-            "steps": [
-              {
-                "highlightLines": [1, 2],
-                "description": "A click, a form submit, a keypress — these are discrete moments where you know exactly why the code is running: because the user did something. Put the response directly at the source."
-              },
-              {
-                "highlightLines": [4, 5, 6, 7],
-                "description": "A chat room connection has to stay in sync with `roomId` for as long as the component is mounted and reacting to prop/state changes over time, regardless of what caused `roomId` to change. That ongoing synchronization requirement — not a specific triggering action — is what an Effect is for."
-              }
-            ]
-          }
-        },
-        {
-          "title": "An Effect-as-relay adds a render you can't see happening",
-          "type": "misconception",
-          "walkthrough": {
-            "code": "// Extra render hiding in plain sight:\n// Click → setSubmitted(true) → RENDER → Effect fires → console.log\n//                                ^ this render did nothing user-visible\n\n// vs. the direct version:\n// Click → console.log — no extra render at all",
-            "steps": [
-              {
-                "highlightLines": [2],
-                "description": "Routing a click through state-then-Effect isn't just \"more code for the same result\" — it's a genuinely different execution path. React has to commit a render where `submitted` is `true` before the Effect is even eligible to run, even though nothing about that render changed what's on screen."
-              },
-              {
-                "highlightLines": [5],
-                "description": "For a single console.log this render is invisible. For something more expensive — a component tree that's costly to reconcile, or an Effect with its own state updates chained after it — treating a click as an Effect trigger instead of handling it directly is a common, easy-to-miss source of extra re-renders."
               }
             ]
           }

@@ -6,8 +6,9 @@ import ReactMarkdown from 'react-markdown';
 import { BookOpen, Code2 } from 'lucide-react';
 import TitleBar from '../components/layout/TitleBar.jsx';
 import { parseLessonContent } from '../lib/lessonContent.js';
-import useLessonSandpack from '../components/lesson/useLessonSandpack.js';
-import { getModuleData } from '../curriculum/registry.js';
+import useLessonSandpack, { isTypeScriptModule } from '../components/lesson/useLessonSandpack.js';
+import { getLocalizedModuleData } from '../curriculum/localizedCurriculum.js';
+import useUIStore from '../store/useUIStore.js';
 import React from 'react';
 import { wrapGlossaryTerms } from '../components/common/TermExplainerTooltip.jsx';
 import SANDPACK_THEME from '../lib/sandpackTheme.js';
@@ -17,7 +18,10 @@ const sandpackTheme = SANDPACK_THEME;
 
 export default function DetachedWindow() {
   const { type = 'mentor', moduleId, lessonId } = useParams();
-  const moduleData = useMemo(() => getModuleData(moduleId), [moduleId]);
+  // The store rehydrates from the `storage` event, so a language switch in the
+  // main window reaches a popped-out reading window too.
+  const language = useUIStore((state) => state.language);
+  const moduleData = useMemo(() => getLocalizedModuleData(moduleId, language), [moduleId, language]);
 
   // Shares LessonView's parser rather than reimplementing it. The two copies had
   // already drifted -- the detached editor named its entry file /App.jsx while
@@ -76,7 +80,7 @@ export default function DetachedWindow() {
         <div style={{ flex: 1, display: 'flex' }}>
           <SandpackProvider
             key={parsedLesson?.id}
-            template={isTS || moduleId === 'typescript' ? 'react-ts' : 'react'}
+            template={isTS || isTypeScriptModule(moduleId) ? 'react-ts' : 'react'}
             theme={sandpackTheme}
             files={sandpackFiles}
             customSetup={sandpackCustomSetup}

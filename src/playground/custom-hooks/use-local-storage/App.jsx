@@ -6,7 +6,7 @@ function ThemeToggle() {
   // 👉 1. Look at this duplicated logic!
   // 👉 3. Replace this with: const [theme, setTheme] = useLocalStorage('theme', 'light');
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light';
+    return localStorage.getItem('theme') ?? 'light'; // Using ?? is safer than || if '0' or '' are valid
   });
 
   useEffect(() => {

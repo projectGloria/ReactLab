@@ -3,8 +3,11 @@
 //   zustand 5's useSyncExternalStore referential equality (same bug as
 //   LessonView.jsx v5). Now selects raw value + useMemo against a
 //   module-level EMPTY_LESSON_PROGRESS singleton.
+// v6 — 2026-09-14 — honour `ignoreRuntimeErrors` so a challenge that is *about*
+//   a thrown error (error-boundaries) can be passed; drop a stray inline BOM.
+// v5 — 2026-08-18 — fix infinite render loop: `state.lessonState?.[id] || {}`
 // v4 — 2026-08-18 — narrow Zustand subscriptions to required state slices
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSandpack } from '@codesandbox/sandpack-react';
@@ -73,8 +76,15 @@ export default function CodeActions({ lesson, nextLessonPath }) {
       const rules = Array.isArray(validatorConfig) ? validatorConfig : validatorConfig?.rules;
       let activeErrors = [];
 
+      // Some challenges are *about* an error reaching the runtime -- the
+      // error-boundaries lesson deliberately throws from a child so the learner
+      // can catch it. Sandpack still reports that throw (React re-reports
+      // boundary-caught errors to window.onerror in development), so a blanket
+      // runtime-error check makes those lessons impossible to pass. Validators
+      // opt out with `ignoreRuntimeErrors`.
+      const ignoreRuntimeErrors = !Array.isArray(validatorConfig) && validatorConfig?.ignoreRuntimeErrors;
       const runtimeError = sandpack.error?.message || sandpack.error;
-      if (runtimeError) {
+      if (runtimeError && !ignoreRuntimeErrors) {
         activeErrors.push('Compilation/Runtime Error: ' + runtimeError);
       }
 

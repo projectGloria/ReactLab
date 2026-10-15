@@ -18,7 +18,7 @@ export default function TodoList() {
       <h2>Todo List</h2>
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {todos.map((item, index) => (
-          // 👉 1-3. Change this key prop!
+          // 👉 Change this key prop!
           <li key={index} style={{ padding: '8px 0', display: 'flex', gap: 8 }}>
             <input type="checkbox" />
             <span>{item.text}</span>

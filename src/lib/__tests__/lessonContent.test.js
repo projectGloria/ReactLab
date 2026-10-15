@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import babel from '@babel/standalone';
-import curriculum from '../../curriculum/index.js';
+import curriculum, { TOTAL_LESSONS } from '../../curriculum/index.js';
 import { parseLessonContent } from '../lessonContent.js';
 import { sectionSlug, extractLessonSections } from '../lessonMarkdown.js';
+import { isTypeScriptModule } from '../../components/lesson/useLessonSandpack.js';
 
 const FENCE = /^```([a-zA-Z]*)\n([\s\S]*?)^```/gm;
 
@@ -27,7 +28,9 @@ for (const moduleMeta of curriculum) {
 
 describe('parseLessonContent', () => {
   it('covers every lesson in the curriculum', () => {
-    expect(allLessons).toHaveLength(84);
+    // Tied to the registry's own count rather than a literal, so adding a lesson
+    // updates one number instead of leaving this test to be edited after the fact.
+    expect(allLessons).toHaveLength(TOTAL_LESSONS);
   });
 
   for (const { moduleId, lesson } of allLessons) {
@@ -151,7 +154,7 @@ describe('parseLessonContent', () => {
     for (const { moduleId, lesson } of allLessons) {
       for (const { lang, body } of fencedBlocks(parseLessonContent(lesson, moduleId).displayContent)) {
         if (!['js', 'jsx', 'javascript', 'ts', 'tsx'].includes(lang)) continue;
-        const isTS = lang === 'ts' || lang === 'tsx' || moduleId === 'typescript';
+        const isTS = lang === 'ts' || lang === 'tsx' || isTypeScriptModule(moduleId);
         try {
           babel.transform(body, {
             presets: isTS ? ['react', 'typescript'] : ['react'],

@@ -11,7 +11,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import ReactMarkdown from 'react-markdown';
 import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackPreview } from '@codesandbox/sandpack-react';
-import { CheckCircle, RotateCcw, ArrowRight, Lightbulb, X, Play, Sparkles, Code2, PanelRightClose } from 'lucide-react';
+import { CheckCircle, RotateCcw, ArrowRight, X, Play, Sparkles, Code2, PanelRightClose } from 'lucide-react';
 import curriculum from '../curriculum/index.js';
 import useProgressStore from '../store/useProgressStore.js';
 import useUIStore from '../store/useUIStore.js';
@@ -19,7 +19,9 @@ import { isLessonUnlocked, getPrerequisiteLesson, getNextActiveLesson, getLesson
 import NotFound from './NotFound.jsx';
 import useModalDialog from '../components/lesson/useModalDialog.js';
 import React, { Suspense } from 'react';
-import { getModuleData } from '../curriculum/registry.js';
+import { getLocalizedModuleData, isLessonTranslatedIn } from '../curriculum/localizedCurriculum.js';
+import LanguageToggleButton from '../components/common/LanguageToggleButton.jsx';
+import { translator } from '../lib/uiStrings.js';
 
 // Custom Popout Icon with window and arrow inside
 const StepThrough = React.lazy(() => import('../components/lesson/StepThrough.jsx'));
@@ -37,7 +39,12 @@ import { SectionHeading, LessonSectionTracker } from '../components/lesson/Lesso
 import LessonSkeleton from '../components/lesson/LessonSkeleton.jsx';
 import useCompactLayout from '../components/lesson/useCompactLayout.js';
 import WeakPrerequisiteNudge from '../components/lesson/WeakPrerequisiteNudge.jsx';
-import useLessonSandpack from '../components/lesson/useLessonSandpack.js';
+import ProjectCompleteButton from '../components/lesson/ProjectCompleteButton.jsx';
+import InsightList from '../components/lesson/InsightList.jsx';
+import SandpackOfflineNotice from '../components/lesson/SandpackOfflineNotice.jsx';
+import SandpackOfflineFallback from '../components/lesson/SandpackOfflineFallback.jsx';
+import TypeDiagnostics from '../components/lesson/TypeDiagnostics.jsx';
+import useLessonSandpack, { isTypeScriptModule } from '../components/lesson/useLessonSandpack.js';
 import SandpackFileTabs from '../components/lesson/SandpackFileTabs.jsx';
 import ProseCodeBlock from '../components/lesson/ProseCodeBlock.jsx';
 import PlainCodeBlock, { codeTextFromPre } from '../components/common/PlainCodeBlock.jsx';
@@ -87,8 +94,14 @@ export default function LessonView() {
   // Gated on showSpeechModal: this hook locks body scroll and manages focus, and
   // neither should happen while the learner is just reading a lesson.
   useModalDialog(speechModalRef, () => setShowSpeechModal(false), showSpeechModal);
-  const moduleData = useMemo(() => getModuleData(moduleId), [moduleId]);
+  const language = useUIStore((state) => state.language);
+  const toggleLanguage = useUIStore((state) => state.toggleLanguage);
+  // Re-reads the module when the flag is toggled, so the lesson swaps language
+  // in place without losing scroll position, editor contents, or progress.
+  const moduleData = useMemo(() => getLocalizedModuleData(moduleId, language), [moduleId, language]);
   const moduleError = !moduleData && moduleId ? 'Unknown module' : null;
+  const isLessonTranslated = isLessonTranslatedIn(moduleId, lessonId, language);
+  const t = useMemo(() => translator(language), [language]);
   const [resetKey, setResetKey] = useState(0);
   const isCompact = useCompactLayout();
 
@@ -156,6 +169,12 @@ export default function LessonView() {
     customSetup: sandpackCustomSetup,
     isRunnable: isPlaygroundRunnable,
   } = useLessonSandpack(parsedLesson, moduleId, resetKey);
+
+  // Distinguishes the two kinds of non-runnable example so the placeholder can
+  // say which one this is. A spec file is recognised by what only a spec has.
+  const isTestFileExample = /\b(describe|it|test)\s*\(|\bexpect\s*\(|\bvi\./.test(
+    parsedLesson?.executableExample || '',
+  );
 
   if (!parsedLesson) {
     if (moduleError) {
@@ -591,6 +610,12 @@ export default function LessonView() {
                         marginTop: '4px',
                       }}
                     >
+                      <LanguageToggleButton
+                        language={language}
+                        onToggle={toggleLanguage}
+                        isTranslated={isLessonTranslated}
+                      />
+
                       <button
                         type="button"
                         onClick={async () => {
@@ -772,57 +797,19 @@ export default function LessonView() {
                     </div>
                   )}
 
-                  {parsedLesson.insights && parsedLesson.insights.length > 0 && (
-                    <div style={{ marginTop: '40px', padding: '24px', backgroundColor: 'rgba(217, 119, 87, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(217, 119, 87, 0.1)' }}>
-                      <h3 style={{ margin: '0 0 16px 0', color: 'var(--warning)', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Lightbulb size={18} /> Insights & Tips
-                      </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {parsedLesson.insights.map((insight, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setTracerData(insight.walkthrough);
-                              setWalkthroughType(`insight-${idx}`);
-                              setShowTracer(true);
-                            }}
-                            style={{
-                              textAlign: 'left',
-                              padding: '12px 16px',
-                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid var(--border-subtle)',
-                              borderRadius: 'var(--radius-sm)',
-                              color: 'var(--text-primary)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'var(--border-focus)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <span style={{
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                backgroundColor: insight.type === 'misconception' ? 'rgba(193, 95, 60, 0.15)' : 'rgba(120, 140, 93, 0.15)',
-                                color: insight.type === 'misconception' ? '#c15f3c' : '#788c5d'
-                              }}>
-                                {insight.type === 'misconception' ? 'Misconception' : 'Tip'}
-                              </span>
-                              <span style={{ fontWeight: 500 }}>{insight.title}</span>
-                            </div>
-                            <ArrowRight size={16} color="var(--accent-primary)" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  {!parsedLesson.challengeDesc && (
+                    <ProjectCompleteButton lessonId={parsedLesson.id} rubricSource={parsedLesson.displayContent} compact />
                   )}
+
+                  <InsightList
+                    insights={parsedLesson.insights}
+                    compact
+                    onOpen={(insight, idx) => {
+                      setTracerData(insight.walkthrough);
+                      setWalkthroughType(`insight-${idx}`);
+                      setShowTracer(true);
+                    }}
+                  />
 
                 </div>
               </div>
@@ -844,7 +831,7 @@ export default function LessonView() {
               {parsedLesson.executableExample ? (
                 <SandpackProvider
                   key={`${parsedLesson.id}#${resetKey}`}
-                  template={moduleId === 'typescript' ? 'react-ts' : 'react'}
+                  template={isTypeScriptModule(moduleId) ? 'react-ts' : 'react'}
                   theme={sandpackTheme}
                   files={sandpackFiles}
                   customSetup={sandpackCustomSetup}
@@ -856,6 +843,7 @@ export default function LessonView() {
                     activeFile: sandpackActiveFile,
                   }}
                 >
+                  <SandpackOfflineNotice dependencies={parsedLesson.dependencies} />
                   <SandpackCacher lessonId={parsedLesson.id} ownedFiles={sandpackVisibleFiles} />
                   <SandpackContextReporter onContext={setMentorContextSafe} />
                   <SandpackCssFormatter lessonId={parsedLesson.id} />
@@ -1019,7 +1007,14 @@ export default function LessonView() {
                       <SandpackFileTabs lessonId={parsedLesson.id} />
                       <SandpackCodeEditor showLineNumbers={true} showTabs={false} closableTabs={false} style={{ flex: 1 }} />
                       {isPlaygroundRunnable ? (
-                        <SandpackPreview style={{ flex: 1, borderTop: '1px solid var(--border-subtle)' }} showOpenInCodeSandbox={false} showRefreshButton={true} />
+                        <div style={{ flex: 1, borderTop: '1px solid var(--border-subtle)', minHeight: 0 }}>
+                          <SandpackOfflineFallback
+                            dependencies={parsedLesson.dependencies}
+                            entryFile={sandpackActiveFile}
+                          >
+                            <SandpackPreview style={{ height: '100%' }} showOpenInCodeSandbox={false} showRefreshButton={true} />
+                          </SandpackOfflineFallback>
+                        </div>
                       ) : (
                         <div
                           style={{
@@ -1037,10 +1032,18 @@ export default function LessonView() {
                             lineHeight: 1.5,
                           }}
                         >
-                          <strong style={{ color: 'var(--text-secondary)' }}>This example is a test file.</strong>
-                          <span>Read it and edit it above — there is no test runner in the sandbox, so there is nothing to preview.</span>
+                          {/* Two different reasons a lesson has no preview, and
+                              telling the reader the wrong one is worse than
+                              saying nothing: testing lessons ship a spec file,
+                              while the opening lessons are plain scripts that
+                              never claimed to render anything. */}
+                          <strong style={{ color: 'var(--text-secondary)' }}>
+                            {t(isTestFileExample ? 'playground.testFileTitle' : 'playground.plainJsTitle')}
+                          </strong>
+                          <span>{t(isTestFileExample ? 'playground.testFileBody' : 'playground.plainJsBody')}</span>
                         </div>
                       )}
+                      <TypeDiagnostics enabled={isTypeScriptModule(moduleId)} />
                     </SandpackLayout>
                   </div>
                 </SandpackProvider>
@@ -1314,57 +1317,18 @@ export default function LessonView() {
                   </div>
                 )}
 
-                {parsedLesson.insights && parsedLesson.insights.length > 0 && (
-                  <div style={{ marginTop: '48px', padding: '28px', backgroundColor: 'rgba(217, 119, 87, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(217, 119, 87, 0.1)' }}>
-                    <h3 style={{ margin: '0 0 16px 0', color: 'var(--warning)', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Lightbulb size={18} /> Insights & Tips
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {parsedLesson.insights.map((insight, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setTracerData(insight.walkthrough);
-                            setWalkthroughType(`insight-${idx}`);
-                            setShowTracer(true);
-                          }}
-                          style={{
-                            textAlign: 'left',
-                            padding: '14px 18px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'var(--border-focus)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{
-                              padding: '3px 8px',
-                              borderRadius: '4px',
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              backgroundColor: insight.type === 'misconception' ? 'rgba(193, 95, 60, 0.15)' : 'rgba(120, 140, 93, 0.15)',
-                              color: insight.type === 'misconception' ? '#c15f3c' : '#788c5d'
-                            }}>
-                              {insight.type === 'misconception' ? 'Misconception' : 'Tip'}
-                            </span>
-                            <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{insight.title}</span>
-                          </div>
-                          <ArrowRight size={16} color="var(--accent-primary)" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {!parsedLesson.challengeDesc && (
+                  <ProjectCompleteButton lessonId={parsedLesson.id} rubricSource={parsedLesson.displayContent} />
                 )}
+
+                <InsightList
+                  insights={parsedLesson.insights}
+                  onOpen={(insight, idx) => {
+                    setTracerData(insight.walkthrough);
+                    setWalkthroughType(`insight-${idx}`);
+                    setShowTracer(true);
+                  }}
+                />
 
                 </div>
               </div>
@@ -1516,7 +1480,7 @@ export default function LessonView() {
           title="Open AI Mentor Panel"
         >
           <Sparkles size={18} />
-          <span>Ask Mentor</span>
+          <span>{t('lesson.askMentor')}</span>
         </motion.button>
       )}
 

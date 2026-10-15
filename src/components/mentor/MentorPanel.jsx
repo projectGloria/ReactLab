@@ -111,6 +111,7 @@ function MentorPanelInner({
 }) {
   const navigate = useNavigate();
   const mentorName = useUIStore((state) => state.mentorName);
+  const language = useUIStore((state) => state.language);
   const aiProvider = useUIStore((state) => state.aiProvider);
   const mentorCustomPrompt = useUIStore((state) => state.mentorCustomPrompt);
   const mentorPresetId = useUIStore((state) => state.mentorPresetId);
@@ -276,6 +277,9 @@ function MentorPanelInner({
         provider: aiProvider,
         apiKey: getActiveApiKey(),
         systemPrompt: effectiveSystemPrompt,
+        // Main decides how to phrase the instruction; the renderer only reports
+        // which language the learner is reading the lesson in.
+        language,
         question: trimmed,
         history,
         context: buildMentorContext({

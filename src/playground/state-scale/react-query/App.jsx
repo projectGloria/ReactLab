@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
@@ -19,14 +19,22 @@ function UserList() {
   const error = null;     // Replace me!
   const data = [];        // Replace me!
 
+  // 👉 4. Get the query client with useQueryClient().
+  // 👉 5. Create a mutation with useMutation({ mutationFn, onSuccess }).
+  //       mutationFn should POST a new user; onSuccess should invalidate ['users'].
+
   if (isLoading) return <div style={{ padding: 20 }}>Loading...</div>;
   if (error) return <div style={{ padding: 20 }}>Error fetching data</div>;
 
   return (
-    <ul style={{ padding: 20 }}>
-      {data.map(user => (
-        <li key={user.id}>{user.name}</li>
-      ))}
-    </ul>
+    <div style={{ padding: 20 }}>
+      <ul>
+        {data.map(user => (
+          <li key={user.id}>{user.name}</li>
+        ))}
+      </ul>
+      {/* 👉 6. Call addUser.mutate('New User') here */}
+      <button onClick={() => {}}>Add User</button>
+    </div>
   );
 }

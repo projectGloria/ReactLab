@@ -51,6 +51,17 @@ const DEFAULT_STYLES = `body {
  * Exported separately from the hook so the cache round-trip is testable without
  * a renderer — that round-trip is where the "Hello world" playground bug lived.
  */
+// Modules whose lessons are TypeScript regardless of what the code happens to
+// contain. `ts-fundamentals` teaches annotations before it teaches `type` or
+// `interface`, so its first lessons carry no keyword for the sniffer below to
+// find -- and a `.tsx` lesson served as `.js` loses every diagnostic it exists
+// to demonstrate. Exported because four call sites decide the Sandpack template.
+const TYPESCRIPT_MODULES = new Set(['typescript', 'ts-fundamentals']);
+
+export function isTypeScriptModule(moduleId) {
+  return TYPESCRIPT_MODULES.has(moduleId);
+}
+
 export function buildLessonFiles(authoredCode, moduleId, lessonId) {
   if (!authoredCode) return null;
 
@@ -58,7 +69,7 @@ export function buildLessonFiles(authoredCode, moduleId, lessonId) {
                authoredCode.includes('interface ') ||
                authoredCode.includes(': Props') ||
                authoredCode.includes('<boolean>') ||
-               moduleId === 'typescript';
+               isTypeScriptModule(moduleId);
 
   const mainFileName = isTS ? '/App.tsx' : '/App.js';
 

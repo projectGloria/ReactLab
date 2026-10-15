@@ -1,7 +1,7 @@
 export default {
   "id": "advanced-state",
-  "title": "Advanced State",
-  "description": "useRef, useReducer, and useMemo",
+  "title": "State Architecture",
+  "description": "Refs, reducers, memoization, and identity-aware decisions.",
   "icon": "Cpu",
   "lessons": [
     {
@@ -92,7 +92,7 @@ export default {
           "title": "Does mutating `ref.current` trigger a re-render?",
           "type": "misconception",
           "walkthrough": {
-            "code": "const renderCount = useRef(0);\n\n// Inside component body or event handler:\nrenderCount.current += 1;\nconsole.log('Renders so far:', renderCount.current);\n// ← No re-render! The UI does not update.",
+            "code": "const renderCount = useRef(0);\n\n// Inside an event handler or an Effect — never in the render body:\nrenderCount.current += 1;\nconsole.log('Renders so far:', renderCount.current);\n// ← No re-render! The UI does not update.",
             "steps": [
               {
                 "highlightLines": [
@@ -121,7 +121,7 @@ export default {
                   5,
                   6
                 ],
-                "description": "`useEffect` without a dependency array runs after every render. During this render, it stores `value` (the current value) into `ref.current`. But this storage happens *after* the render is complete and the return value has been computed."
+                "description": "`useEffect` runs *after* React has committed the render — it gets its own module next, so take it on trust here. Without a dependency array it runs after every commit, storing the current `value` into `ref.current`.\n\nThe timing is the whole trick: that write happens after the return value below has already been computed."
               },
               {
                 "highlightLines": [
@@ -148,7 +148,7 @@ export default {
                 "highlightLines": [
                   11
                 ],
-                "description": "Effects only run for renders that were actually committed to the DOM. Writing to refs inside `useEffect` is safe — it always reflects the number of committed renders, not attempted ones."
+                "description": "Effects only run for renders that were actually committed to the DOM. Writing to refs inside `useEffect` is safe — it always reflects the number of committed renders, not attempted ones.\n\n(`useEffect` is the subject of the next module. All you need from it here is *when* it runs: after the render has been committed, never during it.)"
               }
             ]
           }
@@ -399,7 +399,7 @@ export default {
                   2,
                   3
                 ],
-                "description": "`{ endpoint: '/api', retries: 3 }` is a new JavaScript object on every render. When used as a `useEffect` dependency, React's `Object.is` comparison returns `false` (two different object references), so the effect re-runs on every render — potentially causing infinite loops or unnecessary network requests."
+                "description": "`{ endpoint: '/api', retries: 3 }` is a new JavaScript object on every render. When used as a `useEffect` dependency, React's `Object.is` comparison returns `false` (two different object references), so the effect re-runs on every render — potentially causing infinite loops or unnecessary network requests.\n\n(Dependency arrays belong to `useEffect`, which is the next module. The identity problem shown here is the same one you have just seen with `useMemo`, so it is worth meeting now rather than twice.)"
               },
               {
                 "highlightLines": [
@@ -412,22 +412,22 @@ export default {
           }
         },
         {
-          "title": "React Compiler: useMemo becoming automatic",
+          "title": "React Compiler: useMemo becoming automatic (when you turn it on)",
           "type": "did-you-know",
           "walkthrough": {
-            "code": "// Without React Compiler: manual memoization\nconst sorted = useMemo(() => [...items].sort(fn), [items]);\n\n// With React Compiler (React 19+): automatic!\n// The compiler detects that sorted depends on items\n// and memoizes it automatically — no useMemo needed!\nconst sorted = [...items].sort(fn);",
+            "code": "// Without the React Compiler: manual memoization\nconst sorted = useMemo(() => [...items].sort(fn), [items]);\n\n// With the React Compiler enabled in your build: automatic\n// The compiler works out that sorted depends on items\n// and inserts the memoization itself — no useMemo in your source\nconst sorted = [...items].sort(fn);",
             "steps": [
               {
                 "highlightLines": [
                   2
                 ],
-                "description": "The React Compiler (released with React 19) statically analyzes your component code, identifies which computations depend on which values, and automatically memoizes them — without any `useMemo` calls in your source code."
+                "description": "The React Compiler statically analyzes your component code, works out which computations depend on which values, and inserts memoization at build time — without any `useMemo` calls in your source.\n\n**It is not part of React itself.** It is a separate, opt-in build-time plugin (`babel-plugin-react-compiler`) that you add to your Vite/Next/Babel config. Installing React 19 does not turn it on, and code written for React 19 is not automatically memoized."
               },
               {
                 "highlightLines": [
                   7
                 ],
-                "description": "To benefit from automatic memoization, your components and helpers must be pure — no side effects during render. If your codebase is already clean (no mutation during render, no global side effects), you can remove most manual `useMemo` calls and let the compiler handle optimization."
+                "description": "The optimization is also conditional on your components following the Rules of React — no mutation during render, no conditional hook calls. A component that breaks them gets skipped, silently.\n\nSo until you have actually enabled it, `useMemo` still does what this lesson says it does. The Modern React module covers the Compiler properly, including what enabling it involves."
               }
             ]
           }

@@ -2,6 +2,8 @@
 
 ReactLab is an offline-first desktop learning app (Electron + Vite + React) that teaches modern React through a curated curriculum of lessons, live Sandpack playgrounds, graded coding challenges, walkthroughs, and optional offline AI mentor support.
 
+**What "offline-first" means here, precisely.** Lessons, walkthroughs, hints, learning checks, grading and progress are entirely local and never touch the network. Code playgrounds use Sandpack's hosted bundler when a connection exists, and fall back to an in-browser Babel bundler (`src/lib/localBundler.js`) when it does not — so every runnable lesson still compiles and renders offline, using the React, React Router, Zustand, TanStack Query and other packages the app already ships. The TypeScript modules are checked by a real TypeScript compiler running in a Web Worker, with the standard library and React's types bundled in, so the diagnostics are genuine and also work offline. Two things genuinely need a connection: the handful of lessons that fetch from a public demo API, and the cloud AI mentor providers (the Ollama mentor runs locally).
+
 This README includes:
 - Quick start (install, dev, build, test)
 - Project overview and key concepts

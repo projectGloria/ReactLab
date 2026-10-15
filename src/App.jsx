@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Atom, Sparkles } from 'lucide-react';
 
@@ -173,6 +173,9 @@ function PageLoader() {
   );
 }
 
+// Packaged Electron pages use file://, including hashes for detached windows.
+const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 
@@ -191,7 +194,7 @@ function App() {
         )}
       </AnimatePresence>
 
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/detached/:type/:moduleId/:lessonId" element={<DetachedWindow />} />
           <Route path="/" element={<AppLayout />}>
@@ -203,7 +206,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </Router>
     </>
   );
 }
