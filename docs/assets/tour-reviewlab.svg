@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" width="760" height="220" fill="none">
+  <rect width="760" height="220" rx="12" fill="#0f1118" stroke="#1f2433" stroke-width="1.5" />
+  
+  <!-- Header -->
+  <rect width="760" height="36" rx="12" fill="#151824" />
+  <circle cx="20" cy="18" r="4.5" fill="#ef4444" opacity="0.8" />
+  <circle cx="36" cy="18" r="4.5" fill="#f59e0b" opacity="0.8" />
+  <circle cx="52" cy="18" r="4.5" fill="#10b981" opacity="0.8" />
+  <text x="76" y="22" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600">RETRIEVAL LAB • ACTIVE RECALL &amp; SUPERMEMO SM-2 INTERVALS</text>
+  
+  <!-- Content Area -->
+  <g transform="translate(20, 50)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+    <!-- Stat card 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="226" height="150" rx="8" fill="#141824" stroke="#232a3d" stroke-width="1" />
+      <text x="16" y="28" fill="#94a3b8" font-size="11" font-weight="600">RETENTION HEALTH</text>
+      <text x="16" y="64" fill="#10b981" font-size="32" font-weight="700">92%</text>
+      <text x="16" y="90" fill="#64748b" font-size="11">Concept mastery across 21 modules</text>
+      <rect x="16" y="112" width="194" height="6" rx="3" fill="#1e2638" />
+      <rect x="16" y="112" width="178" height="6" rx="3" fill="#10b981" />
+    </g>
+
+    <!-- Stat card 2: Active Recall Queue -->
+    <g transform="translate(242, 0)">
+      <rect width="236" height="150" rx="8" fill="#141824" stroke="#232a3d" stroke-width="1" />
+      <text x="16" y="28" fill="#f59e0b" font-size="11" font-weight="600">DUE FOR REVIEW TODAY</text>
+      <text x="16" y="64" fill="#f8fafc" font-size="32" font-weight="700">5 <tspan font-size="14" fill="#94a3b8">cards</tspan></text>
+      <text x="16" y="90" fill="#94a3b8" font-size="11">Next: <tspan fill="#38bdf8">Stale Closures in useEffect</tspan></text>
+      
+      <!-- Action buttons -->
+      <g transform="translate(16, 110)">
+        <rect width="90" height="24" rx="4" fill="#1e293b" />
+        <text x="45" y="16" fill="#94a3b8" font-size="10" font-weight="600" text-anchor="middle">Hard (1d)</text>
+        
+        <rect x="100" y="0" width="104" height="24" rx="4" fill="#0284c7" />
+        <text x="152" y="16" fill="#ffffff" font-size="10" font-weight="600" text-anchor="middle">Good (4d)</text>
+      </g>
+    </g>
+
+    <!-- Stat card 3: Readiness & Prerequisite Analysis -->
+    <g transform="translate(494, 0)">
+      <rect width="226" height="150" rx="8" fill="#141824" stroke="#232a3d" stroke-width="1" />
+      <text x="16" y="28" fill="#a78bfa" font-size="11" font-weight="600">MODULE READINESS</text>
+      
+      <g transform="translate(16, 42)">
+        <text x="0" y="12" fill="#e2e8f0" font-size="11">Forms &amp; Input</text>
+        <text x="150" y="12" fill="#10b981" font-size="11" font-weight="600">100%</text>
+        
+        <text x="0" y="36" fill="#e2e8f0" font-size="11">Escape Hatches</text>
+        <text x="150" y="36" fill="#38bdf8" font-size="11" font-weight="600">85%</text>
+        
+        <text x="0" y="60" fill="#e2e8f0" font-size="11">Server Components</text>
+        <text x="150" y="60" fill="#f59e0b" font-size="11" font-weight="600">60%</text>
+        
+        <text x="0" y="84" fill="#e2e8f0" font-size="11">React 19 Actions</text>
+        <text x="150" y="84" fill="#10b981" font-size="11" font-weight="600">Ready</text>
+      </g>
+    </g>
+  </g>
+</svg>

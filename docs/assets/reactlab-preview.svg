@@ -1,0 +1,319 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="1000" height="580" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1000" y2="580" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b0d13" />
+      <stop offset="100%" stop-color="#141721" />
+    </linearGradient>
+    <linearGradient id="windowBorder" x1="0" y1="0" x2="1000" y2="580" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2d3248" />
+      <stop offset="100%" stop-color="#1a1c26" />
+    </linearGradient>
+    <linearGradient id="sidebarGrad" x1="0" y1="0" x2="240" y2="580" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#11131a" />
+      <stop offset="100%" stop-color="#0c0e14" />
+    </linearGradient>
+    <linearGradient id="accentCyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#61dafb" />
+      <stop offset="100%" stop-color="#00b4d8" />
+    </linearGradient>
+    <linearGradient id="activeItem" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <filter id="winGlow" x="-20" y="-20" width="1040" height="620" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.65" />
+    </filter>
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    .code { font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace; font-size: 13px; }
+    .ui { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+
+  <!-- Outer Canvas -->
+  <rect width="1000" height="580" rx="16" fill="url(#bgGrad)" />
+
+  <!-- App Window Container -->
+  <g filter="url(#winGlow)" transform="translate(24, 20)">
+    <!-- App Shell Frame -->
+    <rect width="952" height="536" rx="12" fill="#0f1118" stroke="url(#windowBorder)" stroke-width="1.5" />
+
+    <!-- Window Titlebar -->
+    <rect width="952" height="42" rx="12" fill="#151822" />
+    <rect y="41" width="952" height="1" fill="#202433" />
+
+    <!-- Window Controls (Windows / Modern frameless style) -->
+    <circle cx="24" cy="21" r="5.5" fill="#ef4444" opacity="0.8" />
+    <circle cx="42" cy="21" r="5.5" fill="#f59e0b" opacity="0.8" />
+    <circle cx="60" cy="21" r="5.5" fill="#10b981" opacity="0.8" />
+
+    <!-- App Title & Route Breadcrumbs -->
+    <g transform="translate(85, 14)">
+      <!-- Mini Atom Mark -->
+      <rect x="0" y="0" width="16" height="16" rx="3.5" fill="#1f2430" />
+      <ellipse cx="8" cy="8" rx="6" ry="2.2" fill="none" stroke="#61dafb" stroke-width="0.9" />
+      <ellipse cx="8" cy="8" rx="6" ry="2.2" fill="none" stroke="#61dafb" stroke-width="0.9" transform="rotate(60 8 8)" />
+      <ellipse cx="8" cy="8" rx="6" ry="2.2" fill="none" stroke="#61dafb" stroke-width="0.9" transform="rotate(120 8 8)" />
+      <circle cx="8" cy="8" r="1" fill="#61dafb" />
+
+      <text x="24" y="12" fill="#e2e8f0" font-weight="700" font-size="12" class="ui" letter-spacing="1">REACTLAB</text>
+      <text x="96" y="12" fill="#64748b" font-weight="400" font-size="12" class="ui">•</text>
+      <text x="110" y="12" fill="#94a3b8" font-size="12" class="ui">Fundamentals / State with useState</text>
+    </g>
+
+    <!-- Top Action Badges -->
+    <g transform="translate(680, 11)">
+      <!-- Offline Badge -->
+      <rect x="0" y="0" width="112" height="20" rx="10" fill="#064e3b" stroke="#059669" stroke-width="1" />
+      <circle cx="10" cy="10" r="3" fill="#34d399" />
+      <text x="18" y="14" fill="#6ee7b7" font-size="10.5" font-weight="600" class="ui">OFFLINE READY</text>
+
+      <!-- Detach Window Icon Button -->
+      <rect x="124" y="0" width="20" height="20" rx="4" fill="#1e2330" />
+      <path d="M129 6 h7 v7 M136 6 l-5 5" fill="none" stroke="#94a3b8" stroke-width="1.3" />
+
+      <!-- Zen Mode Button -->
+      <rect x="152" y="0" width="20" height="20" rx="4" fill="#1e2330" />
+      <rect x="156" y="4" width="12" height="12" rx="2" fill="none" stroke="#94a3b8" stroke-width="1.3" />
+      
+      <!-- Tutor Status -->
+      <rect x="180" y="0" width="76" height="20" rx="10" fill="#2d1b4e" stroke="#8b5cf6" stroke-width="1" />
+      <circle cx="189" cy="10" r="3" fill="#a78bfa" />
+      <text x="196" y="14" fill="#c4b5fd" font-size="10" font-weight="600" class="ui">AI MENTOR</text>
+    </g>
+
+    <!-- Left Sidebar (Curriculum Tree) -->
+    <g transform="translate(0, 42)">
+      <rect width="230" height="494" fill="url(#sidebarGrad)" />
+      <line x1="230" y1="0" x2="230" y2="494" stroke="#1f2331" stroke-width="1" />
+
+      <!-- Sidebar Header & Progress -->
+      <text x="16" y="24" fill="#94a3b8" font-size="11" font-weight="700" class="ui" letter-spacing="0.5">CURRICULUM</text>
+      <text x="175" y="24" fill="#38bdf8" font-size="11" font-weight="700" class="ui">38 / 95</text>
+      
+      <!-- Progress Bar Track -->
+      <rect x="16" y="32" width="198" height="4" rx="2" fill="#1e2538" />
+      <rect x="16" y="32" width="79" height="4" rx="2" fill="url(#accentCyan)" />
+
+      <!-- Modules List -->
+      <!-- Module 01 -->
+      <g transform="translate(14, 52)">
+        <rect width="202" height="30" rx="6" fill="#141824" opacity="0.6" />
+        <circle cx="16" cy="15" r="4.5" fill="#10b981" />
+        <text x="28" y="19" fill="#94a3b8" font-size="12" class="ui">01 Getting Started</text>
+      </g>
+
+      <!-- Module 02 -->
+      <g transform="translate(14, 88)">
+        <rect width="202" height="30" rx="6" fill="#141824" opacity="0.6" />
+        <circle cx="16" cy="15" r="4.5" fill="#10b981" />
+        <text x="28" y="19" fill="#94a3b8" font-size="12" class="ui">02 JS Fundamentals</text>
+      </g>
+
+      <!-- Module 03 (Active / Expanded) -->
+      <g transform="translate(14, 124)">
+        <rect width="202" height="152" rx="6" fill="#131724" stroke="#1e293b" stroke-width="1" />
+        <circle cx="16" cy="16" r="4.5" fill="#38bdf8" />
+        <text x="28" y="20" fill="#f1f5f9" font-size="12" font-weight="700" class="ui">03 Fundamentals</text>
+
+        <!-- Sub-lessons -->
+        <text x="32" y="46" fill="#64748b" font-size="11" class="ui">✓ JSX Syntax &amp; Rules</text>
+        <text x="32" y="70" fill="#64748b" font-size="11" class="ui">✓ Components &amp; Props</text>
+        
+        <!-- Active Lesson highlight -->
+        <rect x="22" y="84" width="172" height="26" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1" />
+        <circle cx="32" cy="97" r="3" fill="#38bdf8" />
+        <text x="42" y="101" fill="#38bdf8" font-size="11.5" font-weight="600" class="ui">State with useState</text>
+
+        <text x="32" y="128" fill="#94a3b8" font-size="11" class="ui">○ Event Handling</text>
+        <text x="32" y="148" fill="#94a3b8" font-size="11" class="ui">○ Conditional Rendering</text>
+      </g>
+
+      <!-- Module 04 -->
+      <g transform="translate(14, 284)">
+        <rect width="202" height="30" rx="6" fill="#141824" opacity="0.6" />
+        <circle cx="16" cy="15" r="4.5" fill="#475569" />
+        <text x="28" y="19" fill="#64748b" font-size="12" class="ui">04 React Mental Models</text>
+      </g>
+
+      <!-- Module 05 -->
+      <g transform="translate(14, 320)">
+        <rect width="202" height="30" rx="6" fill="#141824" opacity="0.6" />
+        <circle cx="16" cy="15" r="4.5" fill="#475569" />
+        <text x="28" y="19" fill="#64748b" font-size="12" class="ui">05 Forms &amp; Controlled Inputs</text>
+      </g>
+
+      <!-- Bottom Nav Shortcuts -->
+      <g transform="translate(14, 436)">
+        <rect width="202" height="42" rx="6" fill="#181c28" />
+        <text x="14" y="26" fill="#38bdf8" font-size="12" font-weight="600" class="ui">🧠 Review Lab (SM-2)</text>
+        <text x="160" y="26" fill="#f59e0b" font-size="11" font-weight="700" class="ui">5 Due</text>
+      </g>
+    </g>
+
+    <!-- Main Workspace (Editor + Live Preview) -->
+    <g transform="translate(230, 42)">
+      <!-- Editor Header / File Tabs -->
+      <rect width="400" height="32" fill="#12141c" />
+      <line x1="0" y1="32" x2="400" y2="32" stroke="#1f2331" stroke-width="1" />
+      
+      <!-- Active App.jsx Tab -->
+      <rect x="0" y="0" width="110" height="32" fill="#181b26" />
+      <line x1="0" y1="0" x2="110" y2="0" stroke="#61dafb" stroke-width="2" />
+      <text x="16" y="20" fill="#61dafb" font-size="11" font-weight="600" class="ui">⚛️ App.jsx</text>
+
+      <!-- Secondary styles.css Tab -->
+      <rect x="110" y="0" width="100" height="32" fill="#12141c" />
+      <text x="126" y="20" fill="#64748b" font-size="11" class="ui">styles.css</text>
+
+      <!-- Code Editor Pane -->
+      <rect y="32" width="400" height="462" fill="#0d0f15" />
+      <line x1="400" y1="0" x2="400" y2="494" stroke="#1f2331" stroke-width="1" />
+
+      <!-- Syntax Highlighted React Code -->
+      <g transform="translate(14, 46)" class="code">
+        <!-- Line numbers -->
+        <text x="0" y="16" fill="#334155" text-anchor="end" width="20">1</text>
+        <text x="0" y="38" fill="#334155" text-anchor="end" width="20">2</text>
+        <text x="0" y="60" fill="#334155" text-anchor="end" width="20">3</text>
+        <text x="0" y="82" fill="#334155" text-anchor="end" width="20">4</text>
+        <text x="0" y="104" fill="#334155" text-anchor="end" width="20">5</text>
+        <text x="0" y="126" fill="#334155" text-anchor="end" width="20">6</text>
+        <text x="0" y="148" fill="#334155" text-anchor="end" width="20">7</text>
+        <text x="0" y="170" fill="#334155" text-anchor="end" width="20">8</text>
+        <text x="0" y="192" fill="#334155" text-anchor="end" width="20">9</text>
+        <text x="0" y="214" fill="#334155" text-anchor="end" width="20">10</text>
+        <text x="0" y="236" fill="#334155" text-anchor="end" width="20">11</text>
+        <text x="0" y="258" fill="#334155" text-anchor="end" width="20">12</text>
+        <text x="0" y="280" fill="#334155" text-anchor="end" width="20">13</text>
+
+        <!-- Code Tokens -->
+        <g transform="translate(16, 0)">
+          <!-- Line 1 -->
+          <text x="0" y="16">
+            <tspan fill="#c084fc">import</tspan>
+            <tspan fill="#94a3b8"> { </tspan>
+            <tspan fill="#38bdf8">useState</tspan>
+            <tspan fill="#94a3b8"> } </tspan>
+            <tspan fill="#c084fc">from</tspan>
+            <tspan fill="#a5f3fc"> 'react'</tspan><tspan fill="#94a3b8">;</tspan>
+          </text>
+
+          <!-- Line 3 -->
+          <text x="0" y="60">
+            <tspan fill="#c084fc">export default function</tspan>
+            <tspan fill="#fbbf24"> Counter</tspan><tspan fill="#94a3b8">() {</tspan>
+          </text>
+
+          <!-- Line 4 -->
+          <text x="16" y="82">
+            <tspan fill="#c084fc">const</tspan>
+            <tspan fill="#94a3b8"> [</tspan><tspan fill="#f1f5f9">count</tspan><tspan fill="#94a3b8">, </tspan><tspan fill="#60a5fa">setCount</tspan><tspan fill="#94a3b8">] = </tspan><tspan fill="#38bdf8">useState</tspan><tspan fill="#94a3b8">(0);</tspan>
+          </text>
+
+          <!-- Line 6 -->
+          <text x="16" y="126">
+            <tspan fill="#c084fc">return</tspan><tspan fill="#94a3b8"> (</tspan>
+          </text>
+
+          <!-- Line 7 -->
+          <text x="32" y="148">
+            <tspan fill="#60a5fa">&lt;</tspan><tspan fill="#f43f5e">div</tspan>
+            <tspan fill="#e2e8f0"> className</tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#a5f3fc">"counter-card"</tspan><tspan fill="#60a5fa">&gt;</tspan>
+          </text>
+
+          <!-- Line 8 -->
+          <text x="48" y="170">
+            <tspan fill="#60a5fa">&lt;</tspan><tspan fill="#f43f5e">h2</tspan><tspan fill="#60a5fa">&gt;</tspan><tspan fill="#f1f5f9">Clicks: {count}</tspan><tspan fill="#60a5fa">&lt;/</tspan><tspan fill="#f43f5e">h2</tspan><tspan fill="#60a5fa">&gt;</tspan>
+          </text>
+
+          <!-- Line 9 -->
+          <text x="48" y="192">
+            <tspan fill="#60a5fa">&lt;</tspan><tspan fill="#f43f5e">button</tspan>
+            <tspan fill="#e2e8f0"> onClick</tspan><tspan fill="#94a3b8">={() =&gt; </tspan><tspan fill="#60a5fa">setCount</tspan><tspan fill="#94a3b8">(c =&gt; c + 1)}&gt;</tspan>
+          </text>
+
+          <!-- Line 10 -->
+          <text x="64" y="214">
+            <tspan fill="#f1f5f9">Increment</tspan>
+          </text>
+
+          <!-- Line 11 -->
+          <text x="48" y="236">
+            <tspan fill="#60a5fa">&lt;/</tspan><tspan fill="#f43f5e">button</tspan><tspan fill="#60a5fa">&gt;</tspan>
+          </text>
+
+          <!-- Line 12 -->
+          <text x="32" y="258">
+            <tspan fill="#60a5fa">&lt;/</tspan><tspan fill="#f43f5e">div</tspan><tspan fill="#60a5fa">&gt;</tspan>
+          </text>
+
+          <!-- Line 13 -->
+          <text x="0" y="280">
+            <tspan fill="#94a3b8">  );</tspan>
+          </text>
+          
+          <text x="0" y="302">
+            <tspan fill="#94a3b8">}</tspan>
+          </text>
+        </g>
+      </g>
+
+      <!-- Walkthrough Step Audio Bar -->
+      <g transform="translate(12, 424)">
+        <rect width="376" height="52" rx="8" fill="#161b26" stroke="#252c3d" stroke-width="1" />
+        <circle cx="28" cy="26" r="14" fill="#38bdf8" />
+        <!-- Audio Play triangle -->
+        <polygon points="25,20 34,26 25,32" fill="#0f172a" />
+        <text x="50" y="22" fill="#f1f5f9" font-size="11.5" font-weight="600" class="ui">Step 3 of 4: The Updater Function</text>
+        <text x="50" y="38" fill="#94a3b8" font-size="10.5" class="ui">Voice narration &amp; synchronized line highlights</text>
+        <text x="335" y="30" fill="#38bdf8" font-size="11" font-weight="600" class="ui">0:18 / 0:42</text>
+      </g>
+
+      <!-- Right Pane: Live Interactive Preview -->
+      <g transform="translate(400, 0)">
+        <rect width="322" height="32" fill="#12141c" />
+        <line x1="0" y1="32" x2="322" y2="32" stroke="#1f2331" stroke-width="1" />
+        <text x="14" y="20" fill="#94a3b8" font-size="11" font-weight="600" class="ui">🖥️ LIVE COMPONENT PREVIEW</text>
+
+        <!-- Preview canvas -->
+        <rect y="32" width="322" height="270" fill="#1a1d28" />
+
+        <!-- Rendered Interactive Component Card -->
+        <g transform="translate(36, 68)">
+          <rect width="250" height="150" rx="10" fill="#242838" stroke="#33394d" stroke-width="1" />
+          <text x="125" y="44" fill="#f8fafc" font-size="18" font-weight="700" text-anchor="middle" class="ui">Clicks: 42</text>
+          
+          <!-- Interactive Button -->
+          <rect x="55" y="70" width="140" height="38" rx="6" fill="#38bdf8" />
+          <text x="125" y="94" fill="#0f172a" font-size="13" font-weight="700" text-anchor="middle" class="ui">Increment +1</text>
+          
+          <text x="125" y="130" fill="#94a3b8" font-size="10" text-anchor="middle" class="ui">State Snapshot updated instantly</text>
+        </g>
+
+        <!-- Challenge & AST Test Harness Result -->
+        <g transform="translate(14, 314)">
+          <rect width="294" height="162" rx="8" fill="#131722" stroke="#1e293b" stroke-width="1" />
+          
+          <text x="14" y="24" fill="#10b981" font-size="12" font-weight="700" class="ui">✓ Graded Challenge: Solved!</text>
+          
+          <!-- Rules passed -->
+          <text x="14" y="52" fill="#cbd5e1" font-size="11" class="ui">✔ Uses useState hook declared in Counter</text>
+          <text x="14" y="74" fill="#cbd5e1" font-size="11" class="ui">✔ Button updates state with updater fn</text>
+          <text x="14" y="96" fill="#cbd5e1" font-size="11" class="ui">✔ Live DOM assertions: 3 clicks = 42</text>
+          
+          <!-- Next Button -->
+          <rect x="14" y="116" width="266" height="34" rx="6" fill="#10b981" />
+          <text x="147" y="138" fill="#064e3b" font-size="12" font-weight="700" text-anchor="middle" class="ui">Next Lesson: Event Handling →</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
