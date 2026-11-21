@@ -30,6 +30,7 @@
     "canvas-confetti": "^1.9.4",
     "diff": "^8.0.3",
     "framer-motion": "^12.4.7",
+    "intersection-observer": "file:./stubs/intersection-observer",
     "lucide-react": "^1.16.0",
     "prettier": "^3.5.3",
     "react": "^19.2.0",
@@ -55,7 +56,7 @@
     "wait-on": "^8.0.2"
   },
   "overrides": {
-    "intersection-observer": "file:./stubs/intersection-observer"
+    "intersection-observer": "$intersection-observer"
   },
   "build": {
     "appId": "com.reactlab.desktop",
