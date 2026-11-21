@@ -49,7 +49,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view $env:GITHUB_REF_NAME -R $env:GITHUB_REPOSITORY *> $null
+          gh release view $env:GITHUB_REF_NAME -R $env:GITHUB_REPOSITORY --json id 2>&1 | Out-Null
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:GITHUB_REF_NAME --generate-notes -R $env:GITHUB_REPOSITORY
             if ($LASTEXITCODE -ne 0) { throw 'could not create the release' }

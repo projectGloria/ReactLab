@@ -19,3 +19,9 @@ Pushing a tag like `v1.2.0` runs `.github/workflows/release.yml`: it builds the 
 - **Legacy installs.** `legacy_names = ["ReactLab"]` matches the old NSIS install (productName `ReactLab`).
 - **Secrets.** Set `WINDOWS_PFX_BASE64` and `WINDOWS_PFX_PASSWORD`; without them the setup is unsigned.
 - `needs_webview2` is false because Electron bundles Chromium.
+
+## Fix: release run did not attach the setup (v1.0.0)
+
+- The failure `accepts at most 1 arg(s), received 2` came from the "Make sure the release exists" step in `.github/workflows/release.yml`: `gh release view <tag> -R <repo> *> $null` let `gh` see the redirection as an extra positional argument, so the step failed before GloriaSetup ran.
+- Changed it to `gh release view <tag> -R <repo> --json id 2>&1 | Out-Null`, so the existence check still sets `$LASTEXITCODE` and no stray argument reaches `gh`.
+- Not verified by a CI run; I inferred the cause from the error text and the workflow, and the log was not available here. Re-run the release after pushing.
