@@ -1,6 +1,6 @@
 id             = "ReactLab"
 name           = "ReactLab"
-version        = "1.0.0"
+version        = "1.0.1"
 main_exe       = "ReactLab.exe"
 icon           = "build/icon.ico"
 accent         = "#38bdf8"
