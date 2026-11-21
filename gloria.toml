@@ -1,0 +1,10 @@
+id             = "ReactLab"
+name           = "ReactLab"
+version        = "1.0.0"
+main_exe       = "ReactLab.exe"
+icon           = "build/icon.ico"
+accent         = "#38bdf8"
+description    = "Interactive React 19 studio & AI voice tutor"
+needs_webview2 = false
+data_folders   = ["%APPDATA%\\ReactLab", "%APPDATA%\\reactlab-desktop"]
+legacy_names   = ["ReactLab"]

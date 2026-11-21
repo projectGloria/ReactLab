@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # build/icon.ico is gitignored; the app generates it (and gloria.toml points at it).
+      - name: Generate icon
+        run: npm run icon
+
+      - name: Build renderer
+        run: npx vite build
+
+      # "dir" skips NSIS/portable: GloriaSetup replaces the old installer.
+      - name: Package unpacked Electron app
+        run: npx electron-builder --win dir --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Collect runtime files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force app-dist | Out-Null
+          Copy-Item -Recurse -Force release/win-unpacked/* app-dist/
+          if (-not (Test-Path app-dist/ReactLab.exe)) { throw 'ReactLab.exe missing from app-dist' }
+
+      - name: Make sure the release exists
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:GITHUB_REF_NAME -R $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME --generate-notes -R $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'could not create the release' }
+          }
+
+      - uses: projectGloria/GloriaSetup@v0.1.0
+        with:
+          app-dir: app-dist
+          manifest: gloria.toml
+          certificate: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          certificate-password: ${{ secrets.WINDOWS_PFX_PASSWORD }}
